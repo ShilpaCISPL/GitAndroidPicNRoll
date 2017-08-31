@@ -133,12 +133,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                         if(task.isSuccessful()){
                             finish();
                             //insert values into DB
-//                            FirebaseUser currentFirebaseUser = FirebaseAuth.getInstance().getCurrentUser() ;
-//                            mDatabase.child("Users").child(currentFirebaseUser.getUid()).child("Email").setValue(email);
-//                            mDatabase.child("Users").child(currentFirebaseUser.getUid()).child("Name").setValue(name);
-//                            mDatabase.child("Users").child(currentFirebaseUser.getUid()).child("lat").setValue(c_lat);
-//                            mDatabase.child("Users").child(currentFirebaseUser.getUid()).child("lng").setValue(c_lng);
-//                            mDatabase.child("Users").child(currentFirebaseUser.getUid()).child("profileImageUrl").setValue(name);
+                            FirebaseUser currentFirebaseUser = FirebaseAuth.getInstance().getCurrentUser() ;
+                            mDatabase.child("Users").child(currentFirebaseUser.getUid()).child("Email").setValue(email);
+                            mDatabase.child("Users").child(currentFirebaseUser.getUid()).child("Name").setValue(name);
+                            mDatabase.child("Users").child(currentFirebaseUser.getUid()).child("lat").setValue(c_lat);
+                            mDatabase.child("Users").child(currentFirebaseUser.getUid()).child("lng").setValue(c_lng);
+                            mDatabase.child("Users").child(currentFirebaseUser.getUid()).child("profileImageUrl").setValue("https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSf2u0RWmYALKJ431XNoTKjzu77ERLBIvXKlOEA-Q3DPo2h2rCB");
 
 
 

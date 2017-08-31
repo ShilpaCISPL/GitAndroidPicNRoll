@@ -525,6 +525,15 @@
     </item>
     <item
         is-multidex="false"
+        jar="/Users/shilpa-cispl/Desktop/SHILPA/Android_Projects/PicNRoll/PicNRollAndroid/app/build/intermediates/exploded-aar/com.android.support/cardview-v7/23.0.1/jars/classes.jar"
+        jumboMode="false"
+        optimize="true"
+        revision="26.0.1"
+        sha1="39ae02ce40c3ac828abbf780ce0ff5d7a28b7d6a">
+        <dex dex="/Users/shilpa-cispl/Desktop/SHILPA/Android_Projects/PicNRoll/PicNRollAndroid/app/build/intermediates/pre-dexed/debug/com.android.support-cardview-v7-23.0.1_44e8a4155d2975a3051026641e067d7999d878f6.jar" />
+    </item>
+    <item
+        is-multidex="false"
         jar="/Users/shilpa-cispl/Desktop/SHILPA/Android_Projects/PicNRoll/PicNRollAndroid/app/build/intermediates/exploded-aar/com.android.support/support-core-utils/25.1.0/jars/classes.jar"
         jumboMode="false"
         optimize="true"

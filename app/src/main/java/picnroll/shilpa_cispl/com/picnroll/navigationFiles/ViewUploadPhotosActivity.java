@@ -26,6 +26,9 @@ import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.database.ChildEventListener;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.storage.FirebaseStorage;
@@ -48,6 +51,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.UUID;
 
 import picnroll.shilpa_cispl.com.picnroll.R;
 import picnroll.shilpa_cispl.com.picnroll.customgallery.Action;
@@ -75,35 +79,43 @@ public class ViewUploadPhotosActivity extends AppCompatActivity implements View.
     FirebaseStorage storage = FirebaseStorage.getInstance();
     StorageReference storageRef = storage.getReferenceFromUrl("gs://pick-n-roll.appspot.com");
 
+
     DatabaseReference ref ;
 
     Uri filePath;
-    String userId;
+    String userId,selectedFolderName,selectedFolderIndex,uniquekey;
     FirebaseUser currentFirebaseUser;
     ArrayList<CustomGallery> dataT = new ArrayList<CustomGallery>();
     CustomGallery item = new CustomGallery();
     String extension;
+    UUID uidKey;
 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_view_upload_photos);
-
+        currentFirebaseUser = FirebaseAuth.getInstance().getCurrentUser() ;
+        userId =  currentFirebaseUser.getUid();
         ref =  FirebaseDatabase.getInstance().getReference();
         fab = (FloatingActionButton) findViewById(R.id.fab);
         fab.setOnClickListener(this);
 
 
+        selectedFolderName = getIntent().getStringExtra("selectedFolderName");
+        selectedFolderIndex = getIntent().getStringExtra("selectedFolderPosition");
+
+        Log.d("tag","folders"+selectedFolderName +selectedFolderIndex );
+
         initImageLoader();
         init();
 
-         currentFirebaseUser = FirebaseAuth.getInstance().getCurrentUser() ;
-        userId =  currentFirebaseUser.getUid();
 
 
 
     }
+
+
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -186,7 +198,7 @@ public class ViewUploadPhotosActivity extends AppCompatActivity implements View.
                     // No dots - what do you want to do?
                 } else {
                      extension = string.substring(lastDot);
-                    Log.d("tag","extension"+extension);
+
                 }
 
 
@@ -195,7 +207,7 @@ public class ViewUploadPhotosActivity extends AppCompatActivity implements View.
                 if(filePath != null) {
                     // pd.show();
 
-                    StorageReference childRef = storageRef.child("Files").child(userId).child(extension);
+                    StorageReference childRef = storageRef.child("Files").child(userId).child(uniquekey).child(extension);
                     //uploading the image
                     UploadTask uploadTask = childRef.putFile(filePath);
 
@@ -204,7 +216,7 @@ public class ViewUploadPhotosActivity extends AppCompatActivity implements View.
                         public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
                             //  pd.dismiss();
                             Uri downloadUrl = taskSnapshot.getDownloadUrl();
-                            ref.child("Files").child(userId).child("imageKey").setValue(downloadUrl.toString());
+                            ref.child("Files").child(userId).child(selectedFolderIndex+selectedFolderName+userId+String.valueOf(UUID.randomUUID())).setValue(downloadUrl.toString());
                             Toast.makeText(ViewUploadPhotosActivity.this, "Upload successful", Toast.LENGTH_SHORT).show();
                         }
                     }).addOnFailureListener(new OnFailureListener() {
@@ -288,9 +300,7 @@ public class ViewUploadPhotosActivity extends AppCompatActivity implements View.
         if(filePath != null) {
             // pd.show();
 
-
-            StorageReference childRef = storageRef.child("Files").child(userId).child(extension);
-            ref.child("Files").child(currentFirebaseUser.getUid()).child(currentFirebaseUser.getUid()).setValue(filePath);
+            StorageReference childRef = storageRef.child("Files").child(userId).child(String.valueOf(UUID.randomUUID())).child(extension);
 
             //uploading the image
             UploadTask uploadTask = childRef.putFile(filePath);
@@ -299,7 +309,9 @@ public class ViewUploadPhotosActivity extends AppCompatActivity implements View.
                 @Override
                 public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
                     Uri downloadUrl = taskSnapshot.getDownloadUrl();
-                    ref.child("Files").child(userId).child("imageKey").setValue(downloadUrl.toString());
+                  //  ref.child("Files").child(userId).child(uniquekey).setValue(downloadUrl.toString());
+
+                    ref.child("Files").child(userId).child(selectedFolderIndex+selectedFolderName+userId+String.valueOf(UUID.randomUUID())).setValue(downloadUrl.toString());
                     //  pd.dismiss();
                     Toast.makeText(ViewUploadPhotosActivity.this, "Upload successful", Toast.LENGTH_SHORT).show();
                 }

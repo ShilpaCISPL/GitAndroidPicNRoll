@@ -19,17 +19,14 @@
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-
         </activity>
         <activity android:name=".ProfileActivity" />
         <activity android:name=".LoginActivity" />
         <activity android:name=".ResetPasswordActivity" />
         <activity android:name=".navigationFiles.NavActivity" />
         <activity android:name=".navigationFiles.DashboardActivity" />
-        <activity android:name=".navigationFiles.ViewUploadPhotosActivity" >
-
-            </activity>
-        <activity android:name=".customgallery.CustomGalleryActivity" >
+        <activity android:name=".navigationFiles.ViewUploadPhotosActivity"></activity>
+        <activity android:name=".customgallery.CustomGalleryActivity">
             <intent-filter>
                 <action android:name="gallery.ACTION_PICK" />
                 <action android:name="gallery.ACTION_MULTIPLE_PICK" />
@@ -37,8 +34,7 @@
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
-
-
+        <activity android:name=".userlist.UserListActivity"></activity>
     </application>
 
 </manifest>
