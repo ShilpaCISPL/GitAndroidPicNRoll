@@ -50,8 +50,10 @@ dependencies {
     compile 'com.google.firebase:firebase-storage:10.0.1'
     compile 'com.android.support:cardview-v7:23.0.1'
     compile 'com.android.support:recyclerview-v7:23.0.1'
+    compile 'com.mcxiaoke.volley:library:1.0.19'
     testCompile 'junit:junit:4.12'
 }
+
 
 
 

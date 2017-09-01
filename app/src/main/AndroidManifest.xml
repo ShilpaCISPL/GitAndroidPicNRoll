@@ -14,18 +14,14 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.AppCompat.Light">
         <activity android:name=".MainActivity">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
 
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
         </activity>
         <activity android:name=".ProfileActivity" />
         <activity android:name=".LoginActivity" />
         <activity android:name=".ResetPasswordActivity" />
         <activity android:name=".navigationFiles.NavActivity" />
         <activity android:name=".navigationFiles.DashboardActivity" />
-        <activity android:name=".navigationFiles.ViewUploadPhotosActivity"></activity>
+        <activity android:name=".navigationFiles.ViewUploadPhotosActivity" />
         <activity android:name=".customgallery.CustomGalleryActivity">
             <intent-filter>
                 <action android:name="gallery.ACTION_PICK" />
@@ -34,7 +30,13 @@
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
-        <activity android:name=".userlist.UserListActivity"></activity>
+        <activity android:name=".userlistview.UsersListActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
     </application>
 
 </manifest>

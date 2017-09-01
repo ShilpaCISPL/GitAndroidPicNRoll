@@ -111,6 +111,15 @@
     </item>
     <item
         is-multidex="false"
+        jar="/Users/shilpa-cispl/.gradle/caches/modules-2/files-2.1/com.mcxiaoke.volley/library/1.0.19/a8f23f65fc1e522ee4a1a697ee569901a46741fa/library-1.0.19.jar"
+        jumboMode="false"
+        optimize="true"
+        revision="26.0.1"
+        sha1="a8f23f65fc1e522ee4a1a697ee569901a46741fa">
+        <dex dex="/Users/shilpa-cispl/Desktop/SHILPA/Android_Projects/PicNRoll/PicNRollAndroid/app/build/intermediates/pre-dexed/debug/library-1.0.19_f71cc9bc3422085c4c64ae7a0593800bfb2b1ab8.jar" />
+    </item>
+    <item
+        is-multidex="false"
         jar="/Users/shilpa-cispl/.gradle/caches/modules-2/files-2.1/com.firebase/tubesock/0.0.12/6ec0bbd3e161a73ed672284b587fd32309a86d7a/tubesock-0.0.12.jar"
         jumboMode="false"
         optimize="true"

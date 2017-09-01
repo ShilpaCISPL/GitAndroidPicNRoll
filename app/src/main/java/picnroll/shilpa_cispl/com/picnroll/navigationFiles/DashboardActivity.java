@@ -2,7 +2,6 @@ package picnroll.shilpa_cispl.com.picnroll.navigationFiles;
 
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.provider.MediaStore;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -19,7 +18,6 @@ import com.firebase.client.Firebase;
 import com.firebase.client.FirebaseError;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -27,10 +25,8 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 
 import picnroll.shilpa_cispl.com.picnroll.R;
-import picnroll.shilpa_cispl.com.picnroll.userlist.UserListActivity;
 
 
 public class DashboardActivity extends AppCompatActivity implements View.OnClickListener, AdapterView.OnItemClickListener {
@@ -144,25 +140,29 @@ public class DashboardActivity extends AppCompatActivity implements View.OnClick
 
         AlertDialog.Builder builder1 = new AlertDialog.Builder(this);
         builder1.setMessage("Write your message here.");
-        builder1.setCancelable(true);
+        builder1.setCancelable(false);
+
 
         builder1.setPositiveButton(
                 "Yes",
                 new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int id) {
 
-                        Log.d("tag","keys fb"+imageKeys.size() +String.valueOf((lv.getItemAtPosition(i))) );
-                        if (imageKeys.contains(String.valueOf((lv.getItemAtPosition(i))))) {
-                            Intent userlist = new Intent(DashboardActivity.this, UserListActivity.class);
-                            startActivity(userlist);
-                   }
+
+                        Intent userlist = new Intent(DashboardActivity.this, UserListActivity.class);
+                        startActivity(userlist);
+//                        Log.d("tag","keys fb"+imageKeys.size() +String.valueOf((lv.getItemAtPosition(i))) );
+//                        if (imageKeys.contains(String.valueOf((lv.getItemAtPosition(i))))) {
+//                            Intent userlist = new Intent(DashboardActivity.this, UserListActivity.class);
+//                            startActivity(userlist);
+//                   }
 // else {
 //                            Intent uploadphoto = new Intent(DashboardActivity.this, ViewUploadPhotosActivity.class);
 //                            uploadphoto.putExtra("selectedFolderName", String.valueOf((lv.getItemAtPosition(i))));
 //                            uploadphoto.putExtra("selectedFolderPosition", String.valueOf(i));
 //                            startActivity(uploadphoto);
 //                        }
-                      //  dialog.cancel();
+                        dialog.cancel();
                     }
                 });
 
@@ -179,7 +179,7 @@ public class DashboardActivity extends AppCompatActivity implements View.OnClick
                 });
 
         AlertDialog alert11 = builder1.create();
-        alert11.show();
+        builder1.show();
 
 //        String selectedFolderName = String.valueOf((lv.getItemAtPosition(i)));
 //        Log.d("tag", "main value" + selectedFolderName);
