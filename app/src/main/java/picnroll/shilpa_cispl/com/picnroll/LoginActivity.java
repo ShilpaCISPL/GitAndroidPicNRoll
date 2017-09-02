@@ -23,7 +23,7 @@ public class LoginActivity extends AppCompatActivity implements View.OnClickList
 
     //defining views
     private Button buttonSignIn;
-    private Button buttonResetPassword;
+    private TextView buttonResetPassword;
     private EditText editTextEmail;
     private EditText editTextPassword;
     private TextView textViewSignup;
@@ -56,7 +56,7 @@ public class LoginActivity extends AppCompatActivity implements View.OnClickList
         editTextPassword = (EditText) findViewById(R.id.editTextPassword);
         buttonSignIn = (Button) findViewById(R.id.buttonSignin);
         textViewSignup  = (TextView) findViewById(R.id.textViewSignUp);
-        buttonResetPassword = (Button) findViewById(R.id.buttonResetPassword);
+        buttonResetPassword = (TextView) findViewById(R.id.buttonResetPassword);
 
         progressDialog = new ProgressDialog(this);
 

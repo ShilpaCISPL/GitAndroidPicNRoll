@@ -1,4 +1,4 @@
-package picnroll.shilpa_cispl.com.picnroll.navigationFiles;
+package picnroll.shilpa_cispl.com.picnroll.customgallery;
 
 import android.app.Activity;
 import android.content.Intent;
@@ -16,19 +16,17 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.Button;
 import android.widget.GridView;
 import android.widget.ImageView;
 import android.widget.Toast;
 import android.widget.ViewSwitcher;
 
+import com.firebase.client.Firebase;
+import com.firebase.client.FirebaseError;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.database.ChildEventListener;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.storage.FirebaseStorage;
@@ -40,25 +38,13 @@ import com.nostra13.universalimageloader.core.ImageLoader;
 import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
 import com.nostra13.universalimageloader.core.assist.ImageScaleType;
 
-import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.UUID;
 
 import picnroll.shilpa_cispl.com.picnroll.R;
-import picnroll.shilpa_cispl.com.picnroll.customgallery.Action;
-import picnroll.shilpa_cispl.com.picnroll.customgallery.CustomGallery;
-import picnroll.shilpa_cispl.com.picnroll.customgallery.GalleryAdapter;
-
-import static android.R.attr.path;
+import picnroll.shilpa_cispl.com.picnroll.navigationFiles.Utility;
 
 public class ViewUploadPhotosActivity extends AppCompatActivity implements View.OnClickListener {
 
@@ -85,8 +71,12 @@ public class ViewUploadPhotosActivity extends AppCompatActivity implements View.
     Uri filePath;
     String userId,selectedFolderName,selectedFolderIndex,uniquekey;
     FirebaseUser currentFirebaseUser;
+    private Firebase mRef;
     ArrayList<CustomGallery> dataT = new ArrayList<CustomGallery>();
     CustomGallery item = new CustomGallery();
+    ArrayList<String> imageKeys = new ArrayList<>();
+    ArrayList<String> imageValues = new ArrayList<>();
+    ArrayList<String> folderImageValues = new ArrayList<>();
     String extension;
     UUID uidKey;
 
@@ -111,6 +101,34 @@ public class ViewUploadPhotosActivity extends AppCompatActivity implements View.
         init();
 
 
+        mRef = new Firebase("https://pick-n-roll.firebaseio.com/Files/"+userId+"");
+
+        mRef.addValueEventListener(new com.firebase.client.ValueEventListener() {
+            @Override
+            public void onDataChange(com.firebase.client.DataSnapshot dataSnapshot) {
+
+
+                for (com.firebase.client.DataSnapshot childDataSnapshot : dataSnapshot.getChildren()) {
+                    imageKeys.add(childDataSnapshot.getKey());
+                    imageValues.add(String.valueOf(childDataSnapshot.getValue()));
+                    Log.d("tag","images-->"+childDataSnapshot.getKey() +"\n" + String.valueOf(childDataSnapshot.getValue()) );
+                }
+
+                for (int a=0; a<imageKeys.size(); a++){
+                    if(imageKeys.get(a).contains(selectedFolderName)){
+
+                        folderImageValues.add(imageValues.get(a));
+                        Log.d("tag","folderImages-->"+folderImageValues.size());
+                    }
+                }
+
+            }
+
+            @Override
+            public void onCancelled(FirebaseError firebaseError) {
+
+            }
+        });
 
 
     }
@@ -323,8 +341,6 @@ public class ViewUploadPhotosActivity extends AppCompatActivity implements View.
                 }
             });
         }
-
-
 
 
     }

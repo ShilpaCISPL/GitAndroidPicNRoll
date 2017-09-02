@@ -6,6 +6,9 @@ import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -27,6 +30,9 @@ import com.google.firebase.database.ValueEventListener;
 import java.util.ArrayList;
 
 import picnroll.shilpa_cispl.com.picnroll.R;
+import picnroll.shilpa_cispl.com.picnroll.customgallery.Action;
+import picnroll.shilpa_cispl.com.picnroll.customgallery.ViewUploadPhotosActivity;
+import picnroll.shilpa_cispl.com.picnroll.userlistview.UsersListActivity;
 
 
 public class DashboardActivity extends AppCompatActivity implements View.OnClickListener, AdapterView.OnItemClickListener {
@@ -86,6 +92,8 @@ public class DashboardActivity extends AppCompatActivity implements View.OnClick
 
                     adapter = new ArrayAdapter<String>(getApplicationContext(),
                             android.R.layout.simple_list_item_1, strArr);
+
+
                     Log.d("tag", "strArr value" + strArr.toString());
 
 
@@ -114,7 +122,7 @@ public class DashboardActivity extends AppCompatActivity implements View.OnClick
                         for (DataSnapshot objSnapshot : dataSnapshot.getChildren()) {
                             Object obj = objSnapshot.getKey();
                             imageKeys.add(String.valueOf(obj));
-                            Log.d("tag", "keys are" + obj);
+
                         }
                     }
 
@@ -149,19 +157,20 @@ public class DashboardActivity extends AppCompatActivity implements View.OnClick
                     public void onClick(DialogInterface dialog, int id) {
 
 
-                        Intent userlist = new Intent(DashboardActivity.this, UserListActivity.class);
-                        startActivity(userlist);
-//                        Log.d("tag","keys fb"+imageKeys.size() +String.valueOf((lv.getItemAtPosition(i))) );
-//                        if (imageKeys.contains(String.valueOf((lv.getItemAtPosition(i))))) {
-//                            Intent userlist = new Intent(DashboardActivity.this, UserListActivity.class);
-//                            startActivity(userlist);
-//                   }
-// else {
-//                            Intent uploadphoto = new Intent(DashboardActivity.this, ViewUploadPhotosActivity.class);
-//                            uploadphoto.putExtra("selectedFolderName", String.valueOf((lv.getItemAtPosition(i))));
-//                            uploadphoto.putExtra("selectedFolderPosition", String.valueOf(i));
-//                            startActivity(uploadphoto);
-//                        }
+                        for (int k=0; k<imageKeys.size(); k++) {
+
+                            Log.d("tag", "keys fb" + imageKeys.size() + String.valueOf((lv.getItemAtPosition(i))));
+                            if (imageKeys.get(k).contains(String.valueOf((lv.getItemAtPosition(i))))) {
+                                Intent userlist = new Intent(DashboardActivity.this, UsersListActivity.class);
+                                userlist.putExtra("folderName",String.valueOf((lv.getItemAtPosition(i))));
+                                startActivity(userlist);
+                            } else {
+                                Intent uploadphoto = new Intent(DashboardActivity.this, ViewUploadPhotosActivity.class);
+                                uploadphoto.putExtra("selectedFolderName", String.valueOf((lv.getItemAtPosition(i))));
+                                uploadphoto.putExtra("selectedFolderPosition", String.valueOf(i));
+                                startActivity(uploadphoto);
+                            }
+                        }
                         dialog.cancel();
                     }
                 });
@@ -174,19 +183,82 @@ public class DashboardActivity extends AppCompatActivity implements View.OnClick
                         uploadphoto.putExtra("selectedFolderName", String.valueOf((lv.getItemAtPosition(i))));
                         uploadphoto.putExtra("selectedFolderPosition", String.valueOf(i));
                         startActivity(uploadphoto);
-                      //  dialog.cancel();
+                        //  dialog.cancel();
                     }
                 });
 
-        AlertDialog alert11 = builder1.create();
+
         builder1.show();
 
-//        String selectedFolderName = String.valueOf((lv.getItemAtPosition(i)));
-//        Log.d("tag", "main value" + selectedFolderName);
-//        Intent uploadphoto = new Intent(DashboardActivity.this,ViewUploadPhotosActivity.class);
-//        uploadphoto.putExtra("selectedFolderName",selectedFolderName);
-//        uploadphoto.putExtra("selectedFolderPosition",String.valueOf(i));
-//        startActivity(uploadphoto);
-
     }
+
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        // Inflate the menu; this adds items to the action bar if it is present.
+        getMenuInflater().inflate(R.menu.menu_dashboard, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onPrepareOptionsMenu(Menu menu) {
+        // If the nav drawer is open, hide action items related to the content view
+
+        return super.onPrepareOptionsMenu(menu);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        // Handle action bar item clicks here. The action bar will
+        // automatically handle clicks on the Home/Up button, so long
+        // as you specify a parent activity in AndroidManifest.xml.
+        int id = item.getItemId();
+
+        //noinspection SimplifiableIfStatement
+        if (id == R.id.action_add_folder) {
+            // get prompts.xml view
+            LayoutInflater li = LayoutInflater.from(this);
+            View promptsView = li.inflate(R.layout.dashboard_input_dialog, null);
+
+            AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(
+                    this);
+
+            // set prompts.xml to alertdialog builder
+            alertDialogBuilder.setView(promptsView);
+
+            final EditText userInput = (EditText) promptsView
+                    .findViewById(R.id.editTextDialogUserInput);
+
+            // set dialog message
+            alertDialogBuilder
+                    .setCancelable(false)
+                    .setPositiveButton("OK",
+                            new DialogInterface.OnClickListener() {
+                                public void onClick(DialogInterface dialog,int id) {
+                                    // get user input and set it to result
+                                    // edit text
+                                    mDatabase.child("Albums").child(userId).child(String.valueOf(totalalbumcount)).setValue(userInput.getText().toString());
+                                  //  result.setText(userInput.getText());
+                                }
+                            })
+                    .setNegativeButton("Cancel",
+                            new DialogInterface.OnClickListener() {
+                                public void onClick(DialogInterface dialog,int id) {
+                                    dialog.cancel();
+                                }
+                            });
+
+            // create alert dialog
+            AlertDialog alertDialog = alertDialogBuilder.create();
+
+            // show it
+            alertDialog.show();
+
+
+            return true;
+        }
+
+        return super.onOptionsItemSelected(item);
+    }
+
 }

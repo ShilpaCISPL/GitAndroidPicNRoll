@@ -10,7 +10,7 @@
     <android.support.design.widget.AppBarLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-      >
+        android:id="@+id/appBarLayout">
 
         <android.support.v7.widget.Toolbar
             android:id="@+id/toolbar"
@@ -22,14 +22,6 @@
     </android.support.design.widget.AppBarLayout>
 
 
-    <android.support.design.widget.FloatingActionButton
-        android:id="@+id/fab"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="bottom|end"
-        android:layout_margin="@dimen/fab_margin"
-        app:backgroundTint = "#EC5560"
-        android:src="@android:drawable/ic_menu_camera" />
 
 
 
@@ -62,11 +54,22 @@
         android:verticalSpacing="-15dp"
         tools:listitem="@layout/gallery_item"
         android:layout_marginLeft="27dp"
-        android:layout_alignParentBottom="true"
-        android:layout_alignEnd="@+id/viewSwitcher"
-        android:layout_marginBottom="21dp">
+        android:layout_alignParentTop="true"
+        android:layout_centerHorizontal="true">
 
     </GridView>
+
+    <android.support.design.widget.FloatingActionButton
+        android:id="@+id/fab"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        app:backgroundTint = "#EC5560"
+        android:src="@android:drawable/ic_menu_camera"
+        android:layout_marginLeft="@dimen/fab_margin"
+        android:layout_marginRight="@dimen/fab_margin"
+        android:layout_alignParentBottom="true"
+        android:layout_alignEnd="@+id/gridGallery" />
 
 
 </RelativeLayout>
