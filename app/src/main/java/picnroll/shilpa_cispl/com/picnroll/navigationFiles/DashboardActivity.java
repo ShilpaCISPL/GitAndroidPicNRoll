@@ -2,6 +2,7 @@ package picnroll.shilpa_cispl.com.picnroll.navigationFiles;
 
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.graphics.Color;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -15,6 +16,7 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.firebase.client.Firebase;
@@ -35,7 +37,7 @@ import picnroll.shilpa_cispl.com.picnroll.customgallery.ViewUploadPhotosActivity
 import picnroll.shilpa_cispl.com.picnroll.userlistview.UsersListActivity;
 
 
-public class DashboardActivity extends AppCompatActivity implements View.OnClickListener, AdapterView.OnItemClickListener {
+public class DashboardActivity extends AppCompatActivity implements  AdapterView.OnItemClickListener {
 
     private Button bt;
     private ListView lv;
@@ -56,10 +58,9 @@ public class DashboardActivity extends AppCompatActivity implements View.OnClick
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_dashboard);
 
-        bt = (Button) findViewById(R.id.button1);
+
         lv = (ListView) findViewById(R.id.listView1);
-        et = (EditText) findViewById(R.id.editText1);
-        bt.setOnClickListener(this);
+
         lv.setOnItemClickListener(this);
         Firebase.setAndroidContext(this);
         strArr = new ArrayList<String>();
@@ -86,15 +87,10 @@ public class DashboardActivity extends AppCompatActivity implements View.OnClick
                         totalalbumcount = (int) dataSnapshot.getChildrenCount();
                         strArr.add(String.valueOf(dataSnapshot.child(String.valueOf(k)).getValue()));
 
-
                     }
 
-
                     adapter = new ArrayAdapter<String>(getApplicationContext(),
-                            android.R.layout.simple_list_item_1, strArr);
-
-
-                    Log.d("tag", "strArr value" + strArr.toString());
+                            R.layout.list_item_text,R.id.list_content, strArr);
 
 
                     lv.setAdapter(adapter);
@@ -131,14 +127,6 @@ public class DashboardActivity extends AppCompatActivity implements View.OnClick
                         //handle databaseError
                     }
                 });
-
-
-    }
-
-    @Override
-    public void onClick(View view) {
-
-        mDatabase.child("Albums").child(userId).child(String.valueOf(totalalbumcount)).setValue(et.getText().toString());
 
     }
 
