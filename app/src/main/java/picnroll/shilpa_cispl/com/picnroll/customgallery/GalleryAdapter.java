@@ -96,6 +96,8 @@ public class GalleryAdapter extends BaseAdapter {
 		return dataT;
 	}
 
+
+
 	public void addAll(ArrayList<CustomGallery> files) {
 
 		try {

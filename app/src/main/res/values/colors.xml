@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="colorPrimary">#f3d0ac</color>
+    <color name="colorPrimary">#f19181</color>
     <color name="colorPrimaryDark">#1f2021</color>
     <color name="textColorPrimary">#111213</color>
     <color name="windowBackground">#FFFFFF</color>
-    <color name="navigationBarColor">#000000</color>
+    <color name="navigationBarColor">#f19181</color>
     <color name="colorAccent">#2b2727</color>
 
     <color name="bg_login">#26ae90</color>
@@ -21,6 +21,8 @@
     <color name="lbl_name">#333333</color>
     <color name="btn_logut_bg">#ff6861</color>
 
+
+    <color name="dialog_background">#ece8f0</color>
 
 
 
@@ -45,4 +47,6 @@
 
     <color name="grey_300">#E0E0E0</color>
     <color name="color_white">#fefefe</color>
+
+    <color name="screen_background">#ece8f0</color>
 </resources>

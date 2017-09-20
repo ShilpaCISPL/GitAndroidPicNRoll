@@ -9,6 +9,7 @@ import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
 import android.provider.MediaStore;
+import android.util.Log;
 import android.view.View;
 import android.view.Window;
 import android.widget.AdapterView;
@@ -26,6 +27,7 @@ import com.nostra13.universalimageloader.core.assist.PauseOnScrollListener;
 import com.nostra13.universalimageloader.utils.StorageUtils;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 
@@ -63,8 +65,14 @@ public class CustomGalleryActivity extends Activity {
 					.getAbsolutePath() + "/.temp_tmp";
 			new File(CACHE_DIR).mkdirs();
 
+			Log.d("tag","CACHE_DIR"+CACHE_DIR);
+
+
 			File cacheDir = StorageUtils.getOwnCacheDirectory(getBaseContext(),
 					CACHE_DIR);
+
+			Log.d("tag","cacheDir"+cacheDir);
+
 
 			DisplayImageOptions defaultOptions = new DisplayImageOptions.Builder()
 					.cacheOnDisc(true).imageScaleType(ImageScaleType.EXACTLY)
@@ -99,12 +107,6 @@ public class CustomGalleryActivity extends Activity {
 			findViewById(R.id.llBottomContainer).setVisibility(View.VISIBLE);
 			gridGallery.setOnItemClickListener(mItemMulClickListener);
 			adapter.setMultiplePick(true);
-
-		} else if (action.equalsIgnoreCase(Action.ACTION_PICK)) {
-
-			findViewById(R.id.llBottomContainer).setVisibility(View.GONE);
-			gridGallery.setOnItemClickListener(mItemSingleClickListener);
-			adapter.setMultiplePick(false);
 
 		}
 
@@ -168,16 +170,7 @@ public class CustomGalleryActivity extends Activity {
 		}
 	};
 
-	AdapterView.OnItemClickListener mItemSingleClickListener = new AdapterView.OnItemClickListener() {
 
-		@Override
-		public void onItemClick(AdapterView<?> l, View v, int position, long id) {
-			CustomGallery item = adapter.getItem(position);
-			Intent data = new Intent().putExtra("single_path", item.sdcardPath);
-			setResult(RESULT_OK, data);
-			finish();
-		}
-	};
 
 	private ArrayList<CustomGallery> getGalleryPhotos() {
 		ArrayList<CustomGallery> galleryList = new ArrayList<CustomGallery>();

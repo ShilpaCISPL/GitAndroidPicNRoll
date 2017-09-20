@@ -1,5 +1,6 @@
 package picnroll.shilpa_cispl.com.picnroll;
 
+import android.net.ConnectivityManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.text.TextUtils;
@@ -64,8 +65,36 @@ public class LoginActivity extends AppCompatActivity implements View.OnClickList
         buttonSignIn.setOnClickListener(this);
         textViewSignup.setOnClickListener(this);
         buttonResetPassword.setOnClickListener(this);
+
     }
 
+
+    public final boolean isInternetOn() {
+
+        // get Connectivity Manager object to check connection
+        ConnectivityManager connec =
+                (ConnectivityManager)getSystemService(getBaseContext().CONNECTIVITY_SERVICE);
+
+        // Check for network connections
+        if ( connec.getNetworkInfo(0).getState() == android.net.NetworkInfo.State.CONNECTED ||
+                connec.getNetworkInfo(0).getState() == android.net.NetworkInfo.State.CONNECTING ||
+                connec.getNetworkInfo(1).getState() == android.net.NetworkInfo.State.CONNECTING ||
+                connec.getNetworkInfo(1).getState() == android.net.NetworkInfo.State.CONNECTED ) {
+
+            // if connected with internet
+
+         //   Toast.makeText(this, " Connected ", Toast.LENGTH_LONG).show();
+            return true;
+
+        } else if (
+                connec.getNetworkInfo(0).getState() == android.net.NetworkInfo.State.DISCONNECTED ||
+                        connec.getNetworkInfo(1).getState() == android.net.NetworkInfo.State.DISCONNECTED  ) {
+
+            Toast.makeText(this, "Check your internet", Toast.LENGTH_LONG).show();
+            return false;
+        }
+        return false;
+    }
     //method for user login
     private void userLogin(){
         String email = editTextEmail.getText().toString().trim();
@@ -86,7 +115,7 @@ public class LoginActivity extends AppCompatActivity implements View.OnClickList
         //if the email and password are not empty
         //displaying a progress dialog
 
-        progressDialog.setMessage("Registering Please Wait...");
+        progressDialog.setMessage("Please Wait...");
         progressDialog.show();
 
         //logging in the user
@@ -109,15 +138,21 @@ public class LoginActivity extends AppCompatActivity implements View.OnClickList
     @Override
     public void onClick(View view) {
         if(view == buttonSignIn){
-            userLogin();
+            if(isInternetOn()) {
+                userLogin();
+            }
         }
 
         if(view == textViewSignup){
-            finish();
-            startActivity(new Intent(this, MainActivity.class));
+            if(isInternetOn()) {
+                finish();
+                startActivity(new Intent(this, MainActivity.class));
+            }
         }
         if(view == buttonResetPassword){
-            startActivity(new Intent(this,ResetPasswordActivity.class));
+            if(isInternetOn()) {
+                startActivity(new Intent(this, ResetPasswordActivity.class));
+            }
         }
     }
 }

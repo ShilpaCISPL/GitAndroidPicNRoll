@@ -1,7 +1,11 @@
 package picnroll.shilpa_cispl.com.picnroll.navigationFiles;
 
+import android.app.ProgressDialog;
 import android.content.Intent;
 import android.content.res.Configuration;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.os.AsyncTask;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.widget.DrawerLayout;
@@ -9,65 +13,92 @@ import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.Toast;
 
+import com.firebase.client.Firebase;
+import com.firebase.client.FirebaseError;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 
+import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.List;
 
 import picnroll.shilpa_cispl.com.picnroll.LoginActivity;
-import picnroll.shilpa_cispl.com.picnroll.ProfileActivity;
+
 import picnroll.shilpa_cispl.com.picnroll.R;
+
 
 public class NavActivity extends AppCompatActivity {
 
     private DrawerLayout mDrawerLayout;
     private ListView mDrawerList;
-    String[]titles = {"Dashboard", "MyProfile", "Map", "Logout"};
+    String[] titles = {"Dashboard", "MyProfile", "Map", "Logout"};
     private CharSequence mTitle;
     private CharSequence mDrawerTitle;
     private ActionBarDrawerToggle mDrawerToggle;
-    private Toolbar topToolBar;
-
+    String userId, profileImageUrl;
     //firebase auth object
     private FirebaseAuth firebaseAuth;
+    private Firebase mRef;
+    ImageView profileImage;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_nav);
 
-
+        Firebase.setAndroidContext(this);
+        FirebaseUser currentFirebaseUser = FirebaseAuth.getInstance().getCurrentUser();
+        userId = currentFirebaseUser.getUid();
         //initializing firebase authentication object
         firebaseAuth = FirebaseAuth.getInstance();
         mTitle = mDrawerTitle = getTitle();
 
-//        topToolBar = (Toolbar)findViewById(R.id.toolbar);
-//        setSupportActionBar(topToolBar);
-//        topToolBar.setLogo(R.drawable.logo);
-      //  topToolBar.setLogoDescription(getResources().getString(R.string.logo_desc));
-
         mDrawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
         mDrawerList = (ListView) findViewById(R.id.left_drawer);
         LayoutInflater inflater = getLayoutInflater();
-        View listHeaderView = inflater.inflate(R.layout.header_list,null, false);
+        View listHeaderView = inflater.inflate(R.layout.header_list, null, false);
+        profileImage = (ImageView) listHeaderView.findViewById(R.id.circleView);
+
+        //Read profile imge url from firebase
+        mRef = new Firebase("https://pick-n-roll.firebaseio.com/Users/" + userId + "/profileImageUrl");
+
+        mRef.addValueEventListener(new com.firebase.client.ValueEventListener() {
+            @Override
+            public void onDataChange(com.firebase.client.DataSnapshot dataSnapshot) {
+
+                profileImageUrl = (String) dataSnapshot.getValue();
+                Log.d("tag", "profileImageUrl" + profileImageUrl);
+                new DownloadImage().execute(profileImageUrl);
+
+
+            }
+
+            @Override
+            public void onCancelled(FirebaseError firebaseError) {
+
+            }
+        });
+
 
         mDrawerList.addHeaderView(listHeaderView);
 
         ArrayList<ItemObject> listViewItems = new ArrayList<ItemObject>();
 
-       // List<ItemObject> listViewItems = new ArrayList<ItemObject>();
-        listViewItems.add(new ItemObject("Dashboard", R.drawable.imageone));
-        listViewItems.add(new ItemObject("MyProfile", R.drawable.imagetwo));
-        listViewItems.add(new ItemObject("Map", R.drawable.imagethree));
-        listViewItems.add(new ItemObject("Logout", R.drawable.imagefour));
+        // List<ItemObject> listViewItems = new ArrayList<ItemObject>();
+        listViewItems.add(new ItemObject("Gallery", R.drawable.appicon));
+        listViewItems.add(new ItemObject("MyProfile", R.drawable.myprofile1));
+        listViewItems.add(new ItemObject("Map", R.drawable.map1));
+        listViewItems.add(new ItemObject("Logout", R.drawable.logout));
 
         mDrawerList.setAdapter(new CustomAdapter(this, listViewItems));
 
@@ -106,11 +137,48 @@ public class NavActivity extends AppCompatActivity {
         });
     }
 
-    private void selectItemFragment(int position){
+    // DownloadImage AsyncTask
+    class DownloadImage extends AsyncTask<String, Void, Bitmap> {
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+
+        }
+
+        @Override
+        protected Bitmap doInBackground(String... URL) {
+
+            String imageURL = URL[0];
+
+            Bitmap bitmap = null;
+            try {
+                // Download Image from URL
+                InputStream input = new java.net.URL(imageURL).openStream();
+                // Decode Bitmap
+                bitmap = BitmapFactory.decodeStream(input);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            return bitmap;
+        }
+
+        @Override
+        protected void onPostExecute(Bitmap result) {
+            // Set the bitmap into ImageView
+            //  image.setImageBitmap(result);
+
+            profileImage.setImageBitmap(result);
+
+        }
+    }
+
+
+    private void selectItemFragment(int position) {
 
         Fragment fragment = null;
         FragmentManager fragmentManager = getSupportFragmentManager();
-        switch(position) {
+        switch (position) {
 
             case 1:
 
@@ -125,9 +193,10 @@ public class NavActivity extends AppCompatActivity {
                 fragmentManager.beginTransaction().replace(R.id.main_fragment_container, fragment).commit();
                 break;
             case 3:
-                fragment = new DefaultFragment();
-                fragmentManager.beginTransaction().replace(R.id.main_fragment_container, fragment).commit();
+                Intent iii = new Intent(NavActivity.this, MapsActivity.class);
+                startActivity(iii);
                 break;
+
             case 4:
                 //logging out the user
                 firebaseAuth.signOut();
@@ -143,6 +212,7 @@ public class NavActivity extends AppCompatActivity {
 //        setTitle(titles[position]);
         mDrawerLayout.closeDrawer(mDrawerList);
     }
+
     @Override
     public void setTitle(CharSequence title) {
         mTitle = title;
@@ -168,6 +238,7 @@ public class NavActivity extends AppCompatActivity {
         getMenuInflater().inflate(R.menu.menu_main, menu);
         return true;
     }
+
     @Override
     public boolean onPrepareOptionsMenu(Menu menu) {
         // If the nav drawer is open, hide action items related to the content view

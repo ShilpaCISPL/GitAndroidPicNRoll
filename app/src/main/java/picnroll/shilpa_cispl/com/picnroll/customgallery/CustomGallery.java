@@ -6,3 +6,4 @@ public class CustomGallery {
 	public boolean isSeleted = false;
 
 }
+

@@ -1,4 +1,4 @@
-package picnroll.shilpa_cispl.com.picnroll.customgallery;
+package picnroll.shilpa_cispl.com.picnroll.navigationFiles;
 
 import android.app.Activity;
 import android.content.Intent;
@@ -7,6 +7,7 @@ import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Environment;
 import android.os.Handler;
+import android.os.StrictMode;
 import android.provider.MediaStore;
 import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
@@ -16,17 +17,19 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.Button;
 import android.widget.GridView;
 import android.widget.ImageView;
 import android.widget.Toast;
 import android.widget.ViewSwitcher;
 
-import com.firebase.client.Firebase;
-import com.firebase.client.FirebaseError;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.database.ChildEventListener;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.storage.FirebaseStorage;
@@ -38,26 +41,36 @@ import com.nostra13.universalimageloader.core.ImageLoader;
 import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
 import com.nostra13.universalimageloader.core.assist.ImageScaleType;
 
+import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 import java.util.UUID;
 
 import picnroll.shilpa_cispl.com.picnroll.R;
-import picnroll.shilpa_cispl.com.picnroll.navigationFiles.Utility;
+import picnroll.shilpa_cispl.com.picnroll.customgallery.Action;
+import picnroll.shilpa_cispl.com.picnroll.customgallery.CustomGallery;
+import picnroll.shilpa_cispl.com.picnroll.customgallery.GalleryAdapter;
+
+import static android.R.attr.path;
 
 public class ViewUploadPhotosActivity extends AppCompatActivity implements View.OnClickListener {
 
-    FloatingActionButton fab;
-    private int REQUEST_CAMERA = 0, SELECT_FILE = 1;
-    private static int RESULT_LOAD_IMG = 1;
+    private int REQUEST_CAMERA = 0;
 
+    FloatingActionButton fab;
     GridView gridGallery;
     Handler handler;
     GalleryAdapter adapter;
-
     ImageView imgSinglePick;
-
     ViewSwitcher viewSwitcher;
     ImageLoader imageLoader;
 
@@ -66,73 +79,105 @@ public class ViewUploadPhotosActivity extends AppCompatActivity implements View.
     StorageReference storageRef = storage.getReferenceFromUrl("gs://pick-n-roll.appspot.com");
 
 
-    DatabaseReference ref ;
+    DatabaseReference ref;
 
     Uri filePath;
-    String userId,selectedFolderName,selectedFolderIndex,uniquekey;
+    String userId, selectedFolderName, selectedFolderIndex, uniquekey;
     FirebaseUser currentFirebaseUser;
-    private Firebase mRef;
-    ArrayList<CustomGallery> dataT = new ArrayList<CustomGallery>();
-    CustomGallery item = new CustomGallery();
-    ArrayList<String> imageKeys = new ArrayList<>();
-    ArrayList<String> imageValues = new ArrayList<>();
-    ArrayList<String> folderImageValues = new ArrayList<>();
+
+    ArrayList<String> sharedFolderUserId = new ArrayList<>();
+    ArrayList<String> allImageKeys = new ArrayList<>();
+    ArrayList<String> allImageUrl = new ArrayList<>();
+    ArrayList<String> selectedFolderImageUrl = new ArrayList<>();
+
     String extension;
-    UUID uidKey;
+    String dir;
+    File newdir;
+    public static int count = 0;
+    int TAKE_PHOTO_CODE = 0;
+    Uri outputFileUri;
 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_view_upload_photos);
-        currentFirebaseUser = FirebaseAuth.getInstance().getCurrentUser() ;
-        userId =  currentFirebaseUser.getUid();
-        ref =  FirebaseDatabase.getInstance().getReference();
+
+        StrictMode.VmPolicy.Builder builder = new StrictMode.VmPolicy.Builder();
+        StrictMode.setVmPolicy(builder.build());
+        currentFirebaseUser = FirebaseAuth.getInstance().getCurrentUser();
+        userId = currentFirebaseUser.getUid();
+        ref = FirebaseDatabase.getInstance().getReference();
         fab = (FloatingActionButton) findViewById(R.id.fab);
         fab.setOnClickListener(this);
 
-
         selectedFolderName = getIntent().getStringExtra("selectedFolderName");
         selectedFolderIndex = getIntent().getStringExtra("selectedFolderPosition");
+        sharedFolderUserId = getIntent().getStringArrayListExtra("sharedUsersIdArray");
+        allImageKeys = getIntent().getStringArrayListExtra("imageKeys");
+        allImageUrl = getIntent().getStringArrayListExtra("imageUrl");
 
-        Log.d("tag","folders"+selectedFolderName +selectedFolderIndex );
+        Log.d("tag", "folders" + selectedFolderName + selectedFolderIndex + "\n" + sharedFolderUserId.size() + "\n" + allImageKeys.size());
 
         initImageLoader();
         init();
 
+        // Here, we are making a folder named picFolder to store
+        // pics taken by the camera using this application.
+        dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES) + "/picFolder/";
+        newdir = new File(dir);
+        newdir.mkdirs();
 
-        mRef = new Firebase("https://pick-n-roll.firebaseio.com/Files/"+userId+"");
+//        for (int i = 0; i < allImageKeys.size(); i++) {
+//            if (allImageKeys.get(i).contains(selectedFolderName)) {
+//                selectedFolderImageUrl.add(allImageUrl.get(i));
+//                dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES) + "/picDBFolder/";
+//                newdir = new File(dir);
+//                newdir.mkdirs();
+//
+//                String file = dir+allImageUrl.get(i)+".jpg";
+//                File newfile = new File(file);
+//                Log.d("CameraDemo", "Pic db" +newfile);
+//                try {
+//                    newfile.createNewFile();
+//                }
+//                catch (IOException e)
+//                {
+//                }
+//
+//                //  outputFileUri = Uri.fromFile(newfile);
+//                outputFileUri = Uri.parse(Uri.decode(String.valueOf(newfile)));
+//                Log.d("CameraDemo", "Pic dbsaved" +outputFileUri +"\n"+newfile);
+//
+//
+//                item.sdcardPath = String.valueOf(newfile);
+//                dataT.add(item);
+//
+//            }
+//        }
+//        // viewSwitcher.setDisplayedChild(0);
+//        viewSwitcher.setDisplayedChild(0);
+//        adapter.addAll(dataT);
 
-        mRef.addValueEventListener(new com.firebase.client.ValueEventListener() {
-            @Override
-            public void onDataChange(com.firebase.client.DataSnapshot dataSnapshot) {
-
-
-                for (com.firebase.client.DataSnapshot childDataSnapshot : dataSnapshot.getChildren()) {
-                    imageKeys.add(childDataSnapshot.getKey());
-                    imageValues.add(String.valueOf(childDataSnapshot.getValue()));
-                    Log.d("tag","images-->"+childDataSnapshot.getKey() +"\n" + String.valueOf(childDataSnapshot.getValue()) );
-                }
-
-                for (int a=0; a<imageKeys.size(); a++){
-                    if(imageKeys.get(a).contains(selectedFolderName)){
-
-                        folderImageValues.add(imageValues.get(a));
-                        Log.d("tag","folderImages-->"+folderImageValues.size());
-                    }
-                }
-
-            }
-
-            @Override
-            public void onCancelled(FirebaseError firebaseError) {
-
-            }
-        });
 
 
     }
 
+    @Override
+    public void onClick(View v) {
+        int id = v.getId();
+        if (id == R.id.fab) {
+            boolean result = Utility.checkPermission(ViewUploadPhotosActivity.this);
+            if (result) {
+                Intent cameraIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+                startActivityForResult(cameraIntent, 300);
+            }
+
+
+        }
+
+
+    }
 
 
     @Override
@@ -201,71 +246,90 @@ public class ViewUploadPhotosActivity extends AppCompatActivity implements View.
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
 
-        if (requestCode == 100 && resultCode == Activity.RESULT_OK) {
-            adapter.clear();
-
-
-        } else if (requestCode == 200 && resultCode == Activity.RESULT_OK) {
+        if (requestCode == 200 && resultCode == Activity.RESULT_OK) {
             String[] all_path = data.getStringArrayExtra("all_path");
 
-            for (String string : all_path) {
 
+            ArrayList<CustomGallery> dataT = new ArrayList<CustomGallery>();
+            for (String string : all_path) {
+                CustomGallery item = new CustomGallery();
+
+                Log.d("tag","allpathspic"+"\n"+string);
+                item.sdcardPath = string;
+                dataT.add(item);
 
                 int lastDot = string.lastIndexOf('/');
                 if (lastDot == -1) {
                     // No dots - what do you want to do?
                 } else {
-                     extension = string.substring(lastDot);
-
+                    extension = string.substring(lastDot);
+                    Log.d("tag","extension"+extension);
                 }
 
 
-                item.sdcardPath = string;
-                 filePath = Uri.fromFile(new File(string));
+                // item.sdcardPath = string;
+                filePath = Uri.fromFile(new File(string));
+                Log.d("tag","gallerypath"+filePath +"\n"+item.sdcardPath);
+
                 if(filePath != null) {
                     // pd.show();
 
-                    StorageReference childRef = storageRef.child("Files").child(userId).child(uniquekey).child(extension);
-                    //uploading the image
-                    UploadTask uploadTask = childRef.putFile(filePath);
-
-                    uploadTask.addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
-                        @Override
-                        public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
-                            //  pd.dismiss();
-                            Uri downloadUrl = taskSnapshot.getDownloadUrl();
-                            ref.child("Files").child(userId).child(selectedFolderIndex+selectedFolderName+userId+String.valueOf(UUID.randomUUID())).setValue(downloadUrl.toString());
-                            Toast.makeText(ViewUploadPhotosActivity.this, "Upload successful", Toast.LENGTH_SHORT).show();
-                        }
-                    }).addOnFailureListener(new OnFailureListener() {
-                        @Override
-                        public void onFailure(@NonNull Exception e) {
-                            //  pd.dismiss();
-                            Toast.makeText(ViewUploadPhotosActivity.this, "Upload Failed -> " + e, Toast.LENGTH_SHORT).show();
-                        }
-                    });
+//                    StorageReference childRef = storageRef.child("Files").child(userId).child(extension);
+//                    //uploading the image
+//                    UploadTask uploadTask = childRef.putFile(filePath);
+//
+//                    uploadTask.addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
+//                        @Override
+//                        public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
+//                            //  pd.dismiss();
+//                            Uri downloadUrl = taskSnapshot.getDownloadUrl();
+//                            ref.child("Files").child(userId).child("imageKey").setValue(downloadUrl.toString());
+//                            Toast.makeText(ViewUploadPhotosActivity.this, "Upload successful", Toast.LENGTH_SHORT).show();
+//                        }
+//                    }).addOnFailureListener(new OnFailureListener() {
+//                        @Override
+//                        public void onFailure(@NonNull Exception e) {
+//                            //  pd.dismiss();
+//                            Toast.makeText(ViewUploadPhotosActivity.this, "Upload Failed -> " + e, Toast.LENGTH_SHORT).show();
+//                        }
+//                    });
                 }
 
-                dataT.add(item);
+                // dataT.add(item);
             }
+            //  viewSwitcher.setDisplayedChild(0);
             adapter.addAll(dataT);
         }
 
-        else if(requestCode == REQUEST_CAMERA) {
+        else if (requestCode == 300 && resultCode == Activity.RESULT_OK) {
 
-                onCaptureImageResult(data);
+            Log.d("CameraDemo", "Pic saved");
+
+
+
+            viewSwitcher.setDisplayedChild(1);
+            Bitmap photo = (Bitmap) data.getExtras().get("data");
+            imgSinglePick.setImageBitmap(photo);
+//            viewSwitcher.setDisplayedChild(1);
+//            String single_path = String.valueOf(outputFileUri);
+//            imageLoader.displayImage("file://" + single_path, imgSinglePick);
+//                Bitmap photo = (Bitmap) data.getExtras().get("data");
+//               // imageView.setImageBitmap(photo);
+//                imgSinglePick.setImageBitmap(photo); //imageView is your ImageView
 
         }
+
+
     }
 
 
-        @Override
+    @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
         switch (requestCode) {
             case Utility.MY_PERMISSIONS_REQUEST_READ_EXTERNAL_STORAGE:
                 if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
 
-                      //  cameraIntent();
+                    //  cameraIntent();
 
                 } else {
                     //code for deny
@@ -275,17 +339,6 @@ public class ViewUploadPhotosActivity extends AppCompatActivity implements View.
     }
 
 
-    @Override
-    public void onClick(View v) {
-        int id = v.getId();
-        if (id == R.id.fab) {
-            boolean result = Utility.checkPermission(ViewUploadPhotosActivity.this);
-            if (result)
-                cameraIntent();
-        }
-
-
-    }
 
     private void cameraIntent() {
         Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
@@ -293,59 +346,59 @@ public class ViewUploadPhotosActivity extends AppCompatActivity implements View.
     }
 
 
-    private void onCaptureImageResult(Intent data) {
-        Bitmap thumbnail = (Bitmap) data.getExtras().get("data");
-        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
-        thumbnail.compress(Bitmap.CompressFormat.JPEG, 90, bytes);
-
-        File destination = new File(Environment.getExternalStorageDirectory(),
-                System.currentTimeMillis() + ".jpg");
-
-        item.sdcardPath = String.valueOf(destination);
-        dataT.add(item);
-        adapter.addAll(dataT);
-
-        filePath = data.getData();
-        Log.d("tag","filepath"+filePath +data);
-
-        int lastDot = String.valueOf(destination).lastIndexOf('/');
-        if (lastDot == -1) {
-            // No dots - what do you want to do?
-        } else {
-            extension = String.valueOf(destination).substring(lastDot);
-            Log.d("tag","camera extension"+extension);
-        }
-        if(filePath != null) {
-            // pd.show();
-
-            StorageReference childRef = storageRef.child("Files").child(userId).child(String.valueOf(UUID.randomUUID())).child(extension);
-
-            //uploading the image
-            UploadTask uploadTask = childRef.putFile(filePath);
-
-            uploadTask.addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
-                @Override
-                public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
-                    Uri downloadUrl = taskSnapshot.getDownloadUrl();
-                  //  ref.child("Files").child(userId).child(uniquekey).setValue(downloadUrl.toString());
-
-                    ref.child("Files").child(userId).child(selectedFolderIndex+selectedFolderName+userId+String.valueOf(UUID.randomUUID())).setValue(downloadUrl.toString());
-                    //  pd.dismiss();
-                    Toast.makeText(ViewUploadPhotosActivity.this, "Upload successful", Toast.LENGTH_SHORT).show();
-                }
-            }).addOnFailureListener(new OnFailureListener() {
-                @Override
-                public void onFailure(@NonNull Exception e) {
-                    //  pd.dismiss();
-                    Toast.makeText(ViewUploadPhotosActivity.this, "Upload Failed -> " + e, Toast.LENGTH_SHORT).show();
-                }
-            });
-        }
-
-
-    }
-
+//    private void onCaptureImageResult(Intent data) {
+//        Bitmap thumbnail = (Bitmap) data.getExtras().get("data");
+//        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+//        thumbnail.compress(Bitmap.CompressFormat.JPEG, 90, bytes);
+//
+//        File destination = new File(Environment.getExternalStorageDirectory(),
+//                System.currentTimeMillis() + ".jpg");
+//
+//        item.sdcardPath = String.valueOf(destination);
+//        dataT.add(item);
+//        adapter.addAll(dataT);
+//
+//        filePath = Uri.fromFile(new File(String.valueOf(destination)));
+//
+//        Log.d("tag","filepath"+filePath +"\n" +thumbnail.toString()+"\n"+destination +"\n"+item.sdcardPath);
+//
+//        int lastDot = String.valueOf(destination).lastIndexOf('/');
+//        if (lastDot == -1) {
+//            // No dots - what do you want to do?
+//        } else {
+//            extension = String.valueOf(destination).substring(lastDot);
+//            Log.d("tag","camera extension"+extension);
+//        }
+//        if(filePath != null) {
+//            // pd.show();
+//
+////
+////            StorageReference childRef = storageRef.child("Files").child(userId).child(extension);
+////            ref.child("Files").child(currentFirebaseUser.getUid()).child(currentFirebaseUser.getUid()).setValue(filePath);
+////
+////            //uploading the image
+////            UploadTask uploadTask = childRef.putFile(filePath);
+////
+////            uploadTask.addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
+////                @Override
+////                public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
+////                    Uri downloadUrl = taskSnapshot.getDownloadUrl();
+////                    ref.child("Files").child(userId).child("imageKey").setValue(downloadUrl.toString());
+////                    //  pd.dismiss();
+////                    Toast.makeText(ViewUploadPhotosActivity.this, "Upload successful", Toast.LENGTH_SHORT).show();
+////                }
+////            }).addOnFailureListener(new OnFailureListener() {
+////                @Override
+////                public void onFailure(@NonNull Exception e) {
+////                    //  pd.dismiss();
+////                    Toast.makeText(ViewUploadPhotosActivity.this, "Upload Failed -> " + e, Toast.LENGTH_SHORT).show();
+////                }
+////            });
+//        }
+//
+//
+//
+//
+//    }
 
 }
-
-

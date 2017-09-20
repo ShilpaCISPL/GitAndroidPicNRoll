@@ -1,14 +1,20 @@
 package picnroll.shilpa_cispl.com.picnroll.userlistview;
 
 import android.content.Context;
+import android.content.DialogInterface;
+import android.content.Intent;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -29,6 +35,7 @@ import java.util.List;
 import java.util.UUID;
 
 import picnroll.shilpa_cispl.com.picnroll.R;
+import picnroll.shilpa_cispl.com.picnroll.navigationFiles.DashboardActivity;
 
 public class UsersListActivity extends AppCompatActivity {
 
@@ -46,46 +53,53 @@ public class UsersListActivity extends AppCompatActivity {
     ArrayList<String> imageKeysFromDB = new ArrayList<>();
     ArrayList<String> imageUrlFromDB = new ArrayList<>();
     ArrayList<String> shareImageUrls = new ArrayList<>();
-    String userId,selectedFolderName;
+    ArrayList<String> usersEmail = new ArrayList<>();
+    ArrayList<String> sharedFolderUserId = new ArrayList<>();
+    String userId, selectedFolderName;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_users_list);
+
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+
         Firebase.setAndroidContext(this);
 
-
         selectedFolderName = getIntent().getStringExtra("folderName");
-        FirebaseUser currentFirebaseUser = FirebaseAuth.getInstance().getCurrentUser();
+        sharedFolderUserId = getIntent().getStringArrayListExtra("sharedUsersIdArray");
+
+        final FirebaseUser currentFirebaseUser = FirebaseAuth.getInstance().getCurrentUser();
         userId = currentFirebaseUser.getUid();
+
         mDatabase = FirebaseDatabase.getInstance().getReference();
-
         ImageTitleNameArrayListForClick = new ArrayList<>();
-
         ListOfdataAdapter = new ArrayList<>();
-
         recyclerView = (RecyclerView) findViewById(R.id.recyclerview1);
-
         recyclerView.setHasFixedSize(true);
-
         layoutManagerOfrecyclerView = new LinearLayoutManager(this);
 
         recyclerView.setLayoutManager(layoutManagerOfrecyclerView);
 
-//Read profile imageurl and username
+        //Read profile imageurl and username
         mRef = new Firebase("https://pick-n-roll.firebaseio.com/Users");
 
         mRef.addValueEventListener(new com.firebase.client.ValueEventListener() {
             @Override
             public void onDataChange(com.firebase.client.DataSnapshot dataSnapshot) {
 
-
                 for (DataSnapshot childDataSnapshot : dataSnapshot.getChildren()) {
+                    usersEmail.add(String.valueOf(childDataSnapshot.child("Email").getValue()));
                     userName.add(String.valueOf(childDataSnapshot.child("Name").getValue()));
                     profileImageUrl.add(String.valueOf(childDataSnapshot.child("profileImageUrl").getValue()));
                     userIdArray.add(childDataSnapshot.getKey());
-                }
 
+                    //Remove logged in username from list
+                    if (String.valueOf(childDataSnapshot.child("Email").getValue()).endsWith(currentFirebaseUser.getEmail())) {
+                        userIdArray.remove(childDataSnapshot.getKey());
+                        userName.remove(String.valueOf(childDataSnapshot.child("Name").getValue()));
+                    }
+                }
                 JSONArray jsArray = new JSONArray(userName);
                 ParseJSonResponse(jsArray);
 
@@ -105,23 +119,17 @@ public class UsersListActivity extends AppCompatActivity {
             public void onDataChange(com.firebase.client.DataSnapshot dataSnapshot) {
 
                 for (DataSnapshot childDataSnapshot : dataSnapshot.getChildren()) {
-
                     imageKeysFromDB.add(childDataSnapshot.getKey());
                     imageUrlFromDB.add(String.valueOf(childDataSnapshot.getValue()));
-
                 }
-
-                for(int j=0; j<imageKeysFromDB.size(); j++){
-                    if (imageKeysFromDB.get(j).contains(selectedFolderName)){
+                for (int j = 0; j < imageKeysFromDB.size(); j++) {
+                    if (imageKeysFromDB.get(j).contains(selectedFolderName)) {
                         shareImageUrls.add(imageUrlFromDB.get(j));
-                        Toast.makeText(UsersListActivity.this,""+imageUrlFromDB.get(j)+"",Toast.LENGTH_SHORT).show();
 
-                    }
-                    else {
-                        Toast.makeText(UsersListActivity.this,"No data",Toast.LENGTH_SHORT).show();
+                    } else {
+
                     }
                 }
-
 
             }
 
@@ -131,37 +139,37 @@ public class UsersListActivity extends AppCompatActivity {
             }
         });
 
+    }
 
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case android.R.id.home:
+                finish();
+                return true;
+            default:
+                return super.onOptionsItemSelected(item);
+        }
     }
 
     public void ParseJSonResponse(JSONArray array) {
-
         for (int i = 0; i < userName.size(); i++) {
-
             DataAdapter GetDataAdapter2 = new DataAdapter();
-
             GetDataAdapter2.setImageTitle(userName.get(i));
             GetDataAdapter2.setImageUrl(profileImageUrl.get(i));
-
             ListOfdataAdapter.add(GetDataAdapter2);
         }
-
         recyclerViewadapter = new RecyclerViewAdapter(ListOfdataAdapter, this);
-
         recyclerView.setAdapter(recyclerViewadapter);
     }
 
 
     public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapter.ViewHolder> {
-
         Context context;
-
         List<DataAdapter> dataAdapters;
-
         ImageLoader imageLoader;
 
         public RecyclerViewAdapter(List<DataAdapter> getDataAdapter, Context context) {
-
             super();
             this.dataAdapters = getDataAdapter;
             this.context = context;
@@ -176,6 +184,7 @@ public class UsersListActivity extends AppCompatActivity {
 
             return viewHolder;
         }
+
 
         @Override
         public void onBindViewHolder(ViewHolder Viewholder, int position) {
@@ -195,8 +204,9 @@ public class UsersListActivity extends AppCompatActivity {
 
             Viewholder.VollyImageView.setImageUrl(dataAdapterOBJ.getImageUrl(), imageLoader);
 
-            Viewholder.ImageTitleTextView.setText(dataAdapterOBJ.getImageTitle());
-
+            StringBuilder sb = new StringBuilder(dataAdapterOBJ.getImageTitle());
+            sb.setCharAt(0, Character.toUpperCase(sb.charAt(0)));
+            Viewholder.ImageTitleTextView.setText(sb);
         }
 
         @Override
@@ -221,22 +231,56 @@ public class UsersListActivity extends AppCompatActivity {
                 itemView.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View view) {
+                        final int pos = getAdapterPosition();
 
-                        int pos = getAdapterPosition();
-                        mDatabase.child("Albums").child(userIdArray.get(pos)).child(String.valueOf(UUID.randomUUID())).setValue(selectedFolderName);
-                        mDatabase.child("SharedUsers").child(userId).child(selectedFolderName).child(String.valueOf(UUID.randomUUID())).setValue(userIdArray.get(pos));
+                        if (sharedFolderUserId.contains(userIdArray.get(pos))) {
+                            AlertDialog.Builder builder1 = new AlertDialog.Builder(UsersListActivity.this);
+                            builder1.setTitle("Share Album");
+                            builder1.setMessage("Already shared");
+                            builder1.setCancelable(false);
 
-                        for(int m=0; m<shareImageUrls.size(); m++) {
+                            builder1.setPositiveButton(
+                                    "Ok",
+                                    new DialogInterface.OnClickListener() {
+                                        public void onClick(DialogInterface dialog, int id) {
+                                            dialog.cancel();
 
-                            mDatabase.child("Files").child(userIdArray.get(pos)).child(String.valueOf(UUID.randomUUID())).setValue(shareImageUrls.get(m));
+                                        }
+                                    });
+
+                            builder1.setNegativeButton(
+                                    "Cancel",
+                                    new DialogInterface.OnClickListener() {
+                                        public void onClick(DialogInterface dialog, int id) {
+                                            dialog.cancel();
+                                        }
+                                    });
+
+
+                            builder1.setIcon(R.drawable.appicon);
+
+                            builder1.show();
+
+                        } else {
+
+                            mDatabase.child("Albums").child(userIdArray.get(pos)).child(String.valueOf(UUID.randomUUID())).setValue(selectedFolderName);
+                            mDatabase.child("SharedUsers").child(userId).child(selectedFolderName).child(String.valueOf(UUID.randomUUID())).setValue(userIdArray.get(pos));
+                            for (int m = 0; m < shareImageUrls.size(); m++) {
+                                mDatabase.child("Files").child(userIdArray.get(pos)).child(String.valueOf(UUID.randomUUID())).setValue(shareImageUrls.get(m));
+
+                            }
 
                         }
+
                     }
                 });
 
             }
+
+
         }
     }
+
 
 }
 

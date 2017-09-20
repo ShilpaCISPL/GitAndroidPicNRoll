@@ -2,7 +2,6 @@ package picnroll.shilpa_cispl.com.picnroll.navigationFiles;
 
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.graphics.Color;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -13,12 +12,8 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
-import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
-import android.widget.TextView;
-import android.widget.Toast;
-
 import com.firebase.client.Firebase;
 import com.firebase.client.FirebaseError;
 import com.google.firebase.auth.FirebaseAuth;
@@ -28,18 +23,14 @@ import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
-
 import java.util.ArrayList;
-
 import picnroll.shilpa_cispl.com.picnroll.R;
-import picnroll.shilpa_cispl.com.picnroll.customgallery.Action;
-import picnroll.shilpa_cispl.com.picnroll.customgallery.ViewUploadPhotosActivity;
+import picnroll.shilpa_cispl.com.picnroll.customgallery.FolderImagesActivity;
 import picnroll.shilpa_cispl.com.picnroll.userlistview.UsersListActivity;
 
 
-public class DashboardActivity extends AppCompatActivity implements  AdapterView.OnItemClickListener {
+public class DashboardActivity extends AppCompatActivity implements AdapterView.OnItemClickListener {
 
-    private Button bt;
     private ListView lv;
     private ArrayList<String> strArr;
     private ArrayAdapter<String> adapter;
@@ -51,6 +42,9 @@ public class DashboardActivity extends AppCompatActivity implements  AdapterView
     String userId;
     int totalalbumcount;
     ArrayList<String> imageKeys;
+    ArrayList<String> sharedUsersIdArray = new ArrayList<>();
+    ArrayList<String> imageUrl = new ArrayList<>();
+    int folderCount = 0;
 
 
     @Override
@@ -58,6 +52,7 @@ public class DashboardActivity extends AppCompatActivity implements  AdapterView
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_dashboard);
 
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
         lv = (ListView) findViewById(R.id.listView1);
 
@@ -65,6 +60,7 @@ public class DashboardActivity extends AppCompatActivity implements  AdapterView
         Firebase.setAndroidContext(this);
         strArr = new ArrayList<String>();
         imageKeys = new ArrayList<String>();
+
 
         FirebaseUser currentFirebaseUser = FirebaseAuth.getInstance().getCurrentUser();
         userId = currentFirebaseUser.getUid();
@@ -79,24 +75,47 @@ public class DashboardActivity extends AppCompatActivity implements  AdapterView
                 strArr.clear();
 
                 if (dataSnapshot.getChildrenCount() == 0) {
-                    Toast.makeText(DashboardActivity.this, "No folders", Toast.LENGTH_SHORT).show();
+
+                    AlertDialog.Builder builder1 = new AlertDialog.Builder(DashboardActivity.this);
+                    builder1.setTitle("No folders");
+                    builder1.setMessage("Add New Folder");
+                    builder1.setCancelable(false);
+
+                    builder1.setPositiveButton(
+                            "Ok",
+                            new DialogInterface.OnClickListener() {
+                                public void onClick(DialogInterface dialog, int id) {
+                                    dialog.cancel();
+
+                                }
+                            });
+
+                    builder1.setNegativeButton(
+                            "Cancel",
+                            new DialogInterface.OnClickListener() {
+                                public void onClick(DialogInterface dialog, int id) {
+                                    dialog.cancel();
+                                }
+                            });
+
+
+                    builder1.setIcon(R.drawable.appicon);
+                    builder1.show();
 
                 } else {
 
                     for (int k = 0; k < dataSnapshot.getChildrenCount(); k++) {
                         totalalbumcount = (int) dataSnapshot.getChildrenCount();
                         strArr.add(String.valueOf(dataSnapshot.child(String.valueOf(k)).getValue()));
+                        Log.d("tag", "strarr" + String.valueOf(dataSnapshot.child(String.valueOf(k)).getValue()));
 
                     }
 
                     adapter = new ArrayAdapter<String>(getApplicationContext(),
-                            R.layout.list_item_text,R.id.list_content, strArr);
-
+                            R.layout.list_item_text, R.id.list_content, strArr);
 
                     lv.setAdapter(adapter);
                     adapter.notifyDataSetChanged();
-
-
                 }
 
             }
@@ -115,11 +134,20 @@ public class DashboardActivity extends AppCompatActivity implements  AdapterView
                 new ValueEventListener() {
                     @Override
                     public void onDataChange(DataSnapshot dataSnapshot) {
-                        for (DataSnapshot objSnapshot : dataSnapshot.getChildren()) {
-                            Object obj = objSnapshot.getKey();
-                            imageKeys.add(String.valueOf(obj));
 
+                        if (dataSnapshot.exists()) {
+                            for (DataSnapshot objSnapshot : dataSnapshot.getChildren()) {
+                                Object obj = objSnapshot.getKey();
+                                imageKeys.add(String.valueOf(obj));
+                                imageUrl.add(String.valueOf(objSnapshot.getValue()));
+                                Log.d("tag", "imagekeys" + imageKeys.toString() + "\n" + objSnapshot.getValue());
+
+                            }
+                        } else {
+
+                            imageKeys = null;
                         }
+
                     }
 
                     @Override
@@ -133,33 +161,35 @@ public class DashboardActivity extends AppCompatActivity implements  AdapterView
     @Override
     public void onItemClick(AdapterView<?> adapterView, View view, final int i, long l) {
 
-
         AlertDialog.Builder builder1 = new AlertDialog.Builder(this);
-        builder1.setMessage("Write your message here.");
+        builder1.setMessage("Want to share folder?");
         builder1.setCancelable(false);
 
+        DatabaseReference shareduseref = FirebaseDatabase.getInstance().getReference();
+        DatabaseReference sharedRef = shareduseref.child("SharedUsers").child(userId).child(String.valueOf((lv.getItemAtPosition(i))));
+        sharedRef.addListenerForSingleValueEvent(
+                new ValueEventListener() {
+                    @Override
+                    public void onDataChange(DataSnapshot dataSnapshot) {
 
-        builder1.setPositiveButton(
-                "Yes",
-                new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int id) {
+                        if (dataSnapshot.exists()){
+                            //data exists, do something
+                            for (DataSnapshot objSnapshot : dataSnapshot.getChildren()) {
+                                Object obj = objSnapshot.getValue();
+                                sharedUsersIdArray.add(String.valueOf(obj));
+                                Log.d("tag", "sharedusers--:" + obj + sharedUsersIdArray.size());
 
-
-                        for (int k=0; k<imageKeys.size(); k++) {
-
-                            Log.d("tag", "keys fb" + imageKeys.size() + String.valueOf((lv.getItemAtPosition(i))));
-                            if (imageKeys.get(k).contains(String.valueOf((lv.getItemAtPosition(i))))) {
-                                Intent userlist = new Intent(DashboardActivity.this, UsersListActivity.class);
-                                userlist.putExtra("folderName",String.valueOf((lv.getItemAtPosition(i))));
-                                startActivity(userlist);
-                            } else {
-                                Intent uploadphoto = new Intent(DashboardActivity.this, ViewUploadPhotosActivity.class);
-                                uploadphoto.putExtra("selectedFolderName", String.valueOf((lv.getItemAtPosition(i))));
-                                uploadphoto.putExtra("selectedFolderPosition", String.valueOf(i));
-                                startActivity(uploadphoto);
                             }
                         }
-                        dialog.cancel();
+                        else {
+                            sharedUsersIdArray = null;
+                        }
+
+                    }
+
+                    @Override
+                    public void onCancelled(DatabaseError databaseError) {
+                        //handle databaseError
                     }
                 });
 
@@ -167,15 +197,77 @@ public class DashboardActivity extends AppCompatActivity implements  AdapterView
                 "No",
                 new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int id) {
-                        Intent uploadphoto = new Intent(DashboardActivity.this, ViewUploadPhotosActivity.class);
+
+                        //Get all shared user's usedId
+                        //Get all imagekeys at your "Files" root node
+
+                        Intent uploadphoto = new Intent(DashboardActivity.this, FolderImagesActivity.class);
                         uploadphoto.putExtra("selectedFolderName", String.valueOf((lv.getItemAtPosition(i))));
                         uploadphoto.putExtra("selectedFolderPosition", String.valueOf(i));
+                        uploadphoto.putStringArrayListExtra("sharedUsersIdArray", sharedUsersIdArray);
+                        uploadphoto.putStringArrayListExtra("imageKeys", imageKeys);
+                        uploadphoto.putStringArrayListExtra("imageUrl", imageUrl);
                         startActivity(uploadphoto);
+
+
                         //  dialog.cancel();
                     }
                 });
 
+        builder1.setPositiveButton(
+                "Yes",
+                new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
 
+//                        for (int k=0; k<imageKeys.size(); k++) {
+//
+//                            Log.d("tag", "keys fb" + imageKeys.size() + String.valueOf((lv.getItemAtPosition(i))));
+//                            if (imageKeys.get(k).contains(String.valueOf((lv.getItemAtPosition(i))))) {
+//                                Intent userlist = new Intent(DashboardActivity.this, UsersListActivity.class);
+//                                userlist.putExtra("folderName",String.valueOf((lv.getItemAtPosition(i))));
+//                                userlist.putStringArrayListExtra("sharedUsersIdArray", sharedUsersIdArray);
+//                                Log.d("tag","test--->"+sharedUsersIdArray);
+//                                startActivity(userlist);
+//                            } else {
+//                                Intent uploadphoto = new Intent(DashboardActivity.this, FolderImagesActivity.class);
+//                                uploadphoto.putExtra("selectedFolderName", String.valueOf((lv.getItemAtPosition(i))));
+//                                uploadphoto.putExtra("selectedFolderPosition", String.valueOf(i));
+//                                startActivity(uploadphoto);
+//                            }
+//                        }
+//                        dialog.cancel();
+
+
+                        if (imageKeys != null) {
+//                            Intent uploadphoto = new Intent(DashboardActivity.this, UsersListActivity.class);
+//                            uploadphoto.putExtra("selectedFolderName", String.valueOf((lv.getItemAtPosition(i))));
+//                            uploadphoto.putExtra("selectedFolderPosition", String.valueOf(i));
+//                            startActivity(uploadphoto);
+                            for (int k = 0; k < imageKeys.size(); k++) {
+                                if (imageKeys.get(k).contains(String.valueOf((lv.getItemAtPosition(i))))) {
+                                    Intent userlist = new Intent(DashboardActivity.this, UsersListActivity.class);
+                                    userlist.putExtra("folderName", String.valueOf((lv.getItemAtPosition(i))));
+                                    userlist.putStringArrayListExtra("sharedUsersIdArray", sharedUsersIdArray);
+                                    Log.d("tag", "test--->" + sharedUsersIdArray);
+                                    startActivity(userlist);
+                                }
+                            }
+
+                        } else {
+                            Intent uploadphoto = new Intent(DashboardActivity.this, FolderImagesActivity.class);
+                            uploadphoto.putExtra("selectedFolderName", String.valueOf((lv.getItemAtPosition(i))));
+                            uploadphoto.putExtra("selectedFolderPosition", String.valueOf(i));
+                            uploadphoto.putStringArrayListExtra("sharedUsersIdArray", sharedUsersIdArray);
+                            startActivity(uploadphoto);
+
+                        }
+
+                        dialog.cancel();
+                    }
+                });
+
+
+        builder1.setIcon(R.drawable.appicon);
         builder1.show();
 
     }
@@ -203,6 +295,7 @@ public class DashboardActivity extends AppCompatActivity implements  AdapterView
         int id = item.getItemId();
 
         //noinspection SimplifiableIfStatement
+        //Add new folder to database
         if (id == R.id.action_add_folder) {
             // get prompts.xml view
             LayoutInflater li = LayoutInflater.from(this);
@@ -222,16 +315,16 @@ public class DashboardActivity extends AppCompatActivity implements  AdapterView
                     .setCancelable(false)
                     .setPositiveButton("OK",
                             new DialogInterface.OnClickListener() {
-                                public void onClick(DialogInterface dialog,int id) {
+                                public void onClick(DialogInterface dialog, int id) {
                                     // get user input and set it to result
                                     // edit text
                                     mDatabase.child("Albums").child(userId).child(String.valueOf(totalalbumcount)).setValue(userInput.getText().toString());
-                                  //  result.setText(userInput.getText());
+                                    //  result.setText(userInput.getText());
                                 }
                             })
                     .setNegativeButton("Cancel",
                             new DialogInterface.OnClickListener() {
-                                public void onClick(DialogInterface dialog,int id) {
+                                public void onClick(DialogInterface dialog, int id) {
                                     dialog.cancel();
                                 }
                             });
@@ -242,6 +335,11 @@ public class DashboardActivity extends AppCompatActivity implements  AdapterView
             // show it
             alertDialog.show();
 
+
+            return true;
+        }
+        else if(id ==android.R.id.home) {
+            finish();
 
             return true;
         }
