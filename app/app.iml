@@ -214,6 +214,7 @@
     <orderEntry type="library" exported="" name="play-services-gcm-10.0.1" level="project" />
     <orderEntry type="library" exported="" name="play-services-games-10.0.1" level="project" />
     <orderEntry type="library" exported="" name="firebase-analytics-10.0.1" level="project" />
+    <orderEntry type="library" exported="" name="picasso-2.5.2" level="project" />
     <orderEntry type="library" exported="" name="firebase-auth-10.0.1" level="project" />
     <orderEntry type="library" exported="" name="constraint-layout-1.0.2" level="project" />
     <orderEntry type="library" exported="" name="play-services-tasks-10.0.1" level="project" />

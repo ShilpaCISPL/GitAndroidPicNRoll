@@ -1,7 +1,12 @@
 package picnroll.shilpa_cispl.com.picnroll.customgallery;
 
 import android.app.Activity;
+import android.app.AlarmManager;
+import android.app.PendingIntent;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Environment;
@@ -9,6 +14,7 @@ import android.os.Handler;
 import android.provider.MediaStore;
 import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
+import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -16,7 +22,6 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.Window;
-import android.widget.Button;
 import android.widget.GridView;
 import android.widget.ImageView;
 import android.widget.Toast;
@@ -39,15 +44,16 @@ import com.nostra13.universalimageloader.core.ImageLoader;
 import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
 import com.nostra13.universalimageloader.core.assist.ImageScaleType;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.UUID;
 
 import picnroll.shilpa_cispl.com.picnroll.R;
 import picnroll.shilpa_cispl.com.picnroll.navigationFiles.Utility;
-import picnroll.shilpa_cispl.com.picnroll.navigationFiles.ViewUploadPhotosActivity;
+import picnroll.shilpa_cispl.com.picnroll.sendpushnotifications.MyFirebaseMessagingService;
+import picnroll.shilpa_cispl.com.picnroll.sendpushnotifications.Notification_reciever;
 
 public class FolderImagesActivity extends AppCompatActivity implements View.OnClickListener {
 
@@ -73,6 +79,12 @@ public class FolderImagesActivity extends AppCompatActivity implements View.OnCl
     ArrayList<String> imageKeys = new ArrayList<>();
     ArrayList<String> imageValues = new ArrayList<>();
     ArrayList<String> folderImageValues = new ArrayList<>();
+    int count =0;
+
+    //push notification
+    String msg;
+    Notification_reciever mNotificationReceiver = new Notification_reciever();
+    BroadcastReceiver mMessageReceiver ;
 
 
     @Override
@@ -155,7 +167,32 @@ public class FolderImagesActivity extends AppCompatActivity implements View.OnCl
         }
         viewSwitcher.setDisplayedChild(0);
         adapter.addAll(dataT);
+
+
+//push
+        Intent serviceIntent = new Intent(this, MyFirebaseMessagingService.class);
+        startService(serviceIntent);
+        registerReceiver(mNotificationReceiver, new IntentFilter("MyReceiver"));
     }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // Register mMessageReceiver to receive messages.
+        LocalBroadcastManager.getInstance(this).registerReceiver(mMessageReceiver,
+                new IntentFilter("my-event"));
+    }
+
+
+
+    @Override
+    protected void onPause() {
+        LocalBroadcastManager.getInstance(this).unregisterReceiver(mMessageReceiver);
+        super.onPause();
+    }
+
+
+
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -232,6 +269,7 @@ public class FolderImagesActivity extends AppCompatActivity implements View.OnCl
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
 
+
         //Gallery image added
         if (requestCode == 200 && resultCode == Activity.RESULT_OK) {
             String[] all_path = data.getStringArrayExtra("all_path");
@@ -242,6 +280,7 @@ public class FolderImagesActivity extends AppCompatActivity implements View.OnCl
                 CustomGallery item = new CustomGallery();
                 item.sdcardPath = string;
 
+                count ++;
                 dataT.add(item);
 
                 //Read image name and insert in DB
@@ -269,6 +308,41 @@ public class FolderImagesActivity extends AppCompatActivity implements View.OnCl
                         @Override
                         public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
                             //  pd.dismiss();
+                            Log.d("tag", "count" +count);
+
+
+
+                            // handler for received Intents for the "my-event" event
+                              mMessageReceiver = new BroadcastReceiver() {
+                                @Override
+                                public void onReceive(Context context, Intent intent) {
+                                    // Extract data included in the Intent
+                                    msg = intent.getStringExtra("message");
+                                    Log.d("receiver", "Got message: " + msg);
+
+                                    Calendar calendar = Calendar.getInstance();
+
+                                    calendar.set(Calendar.HOUR_OF_DAY, 12);
+                                    calendar.set(Calendar.MINUTE, 50);
+                                    calendar.set(Calendar.SECOND, 00);
+
+
+                                    Intent intent1 = new Intent("MyReceiver");
+                                    intent1.putExtra("string", msg);
+                                    intent1.putExtra("test","PicNRoll");
+                                    sendBroadcast(intent);
+                                    PendingIntent pendingIntent = PendingIntent.getBroadcast(getApplicationContext(), 100, intent1, PendingIntent.FLAG_UPDATE_CURRENT);
+
+                                    AlarmManager alarmManager = (AlarmManager) getSystemService(ALARM_SERVICE);
+                                    alarmManager.setRepeating(AlarmManager.RTC_WAKEUP, calendar.getTimeInMillis(), AlarmManager.INTERVAL_DAY, pendingIntent);
+                                }
+                            };
+
+
+
+
+
+
                             Uri downloadUrl = taskSnapshot.getDownloadUrl();
                             ref.child("Files").child(userId).child(selectedFolderIndex + selectedFolderName + userId + String.valueOf(UUID.randomUUID())).setValue(downloadUrl.toString());
                             //Share camera photo with already shared users
@@ -297,8 +371,10 @@ public class FolderImagesActivity extends AppCompatActivity implements View.OnCl
             viewSwitcher.setDisplayedChild(0);
             adapter.addAll(dataT);
         }
+
         //Camera image added
         else if (requestCode == 300 && resultCode == Activity.RESULT_OK) {
+
 
             viewSwitcher.setDisplayedChild(1);
             Bitmap photo = (Bitmap) data.getExtras().get("data");
@@ -334,6 +410,7 @@ public class FolderImagesActivity extends AppCompatActivity implements View.OnCl
                     @Override
                     public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
                         //  pd.dismiss();
+
                         Uri downloadUrl = taskSnapshot.getDownloadUrl();
                         refCamera.child("Files").child(userId).child(selectedFolderIndex + selectedFolderName + userId + String.valueOf(UUID.randomUUID())).setValue(downloadUrl.toString());
 
@@ -362,6 +439,11 @@ public class FolderImagesActivity extends AppCompatActivity implements View.OnCl
 
 
         }
+    }
+    @Override
+    protected void onDestroy() {
+        unregisterReceiver(mNotificationReceiver);
+        super.onDestroy();
     }
 
     @Override

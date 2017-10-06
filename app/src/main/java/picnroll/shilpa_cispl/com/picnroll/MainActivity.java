@@ -31,6 +31,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private EditText editTextEmail;
     private EditText editTextPassword;
     private EditText editTextName;
+private EditText editTextPhoneNumber;
     private Button buttonSignup;
 
     private TextView textViewSignin;
@@ -86,8 +87,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         editTextName = (EditText) findViewById(R.id.editTextName);
         editTextEmail = (EditText) findViewById(R.id.editTextEmail);
         editTextPassword = (EditText) findViewById(R.id.editTextPassword);
+        editTextPhoneNumber = (EditText) findViewById(R.id.editTextPhoneNumber);
         textViewSignin = (TextView) findViewById(R.id.textViewSignin);
-
 
         buttonSignup = (Button) findViewById(R.id.buttonSignup);
 
@@ -104,6 +105,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         final String name = editTextName.getText().toString().trim();
         final String email = editTextEmail.getText().toString().trim();
         String password  = editTextPassword.getText().toString().trim();
+        final String phonenumber = editTextPhoneNumber.getText().toString().trim();
 
         Log.d("tag","valuess are-->" +name +email +password +c_lat +c_lng);
 
@@ -116,6 +118,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         if(TextUtils.isEmpty(password)){
             Toast.makeText(this,"Please enter password",Toast.LENGTH_LONG).show();
             return;
+        }
+
+        if (TextUtils.isEmpty(phonenumber)){
+            Toast.makeText(this,"Please enter phonenumber",Toast.LENGTH_LONG).show();
+            return;
+
         }
 
         //if the email and password are not empty
@@ -136,6 +144,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                             FirebaseUser currentFirebaseUser = FirebaseAuth.getInstance().getCurrentUser() ;
                             mDatabase.child("Users").child(currentFirebaseUser.getUid()).child("Email").setValue(email);
                             mDatabase.child("Users").child(currentFirebaseUser.getUid()).child("Name").setValue(name);
+                            mDatabase.child("Users").child(currentFirebaseUser.getUid()).child("PhoneNumber").setValue(phonenumber);
                             mDatabase.child("Users").child(currentFirebaseUser.getUid()).child("lat").setValue(c_lat);
                             mDatabase.child("Users").child(currentFirebaseUser.getUid()).child("lng").setValue(c_lng);
                             mDatabase.child("Users").child(currentFirebaseUser.getUid()).child("profileImageUrl").setValue("https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSf2u0RWmYALKJ431XNoTKjzu77ERLBIvXKlOEA-Q3DPo2h2rCB");

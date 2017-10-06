@@ -1,22 +1,27 @@
 package picnroll.shilpa_cispl.com.picnroll.userlistview;
 
+import android.app.ProgressDialog;
+import android.content.ContentResolver;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.database.Cursor;
+import android.net.Uri;
+import android.provider.ContactsContract;
+import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.support.v7.widget.Toolbar;
+import android.telephony.PhoneNumberUtils;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.android.volley.toolbox.ImageLoader;
 import com.android.volley.toolbox.NetworkImageView;
@@ -25,17 +30,20 @@ import com.firebase.client.Firebase;
 import com.firebase.client.FirebaseError;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 
 import org.json.JSONArray;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
 import picnroll.shilpa_cispl.com.picnroll.R;
-import picnroll.shilpa_cispl.com.picnroll.navigationFiles.DashboardActivity;
+import picnroll.shilpa_cispl.com.picnroll.navigationFiles.NavActivity;
 
 public class UsersListActivity extends AppCompatActivity {
 
@@ -55,7 +63,14 @@ public class UsersListActivity extends AppCompatActivity {
     ArrayList<String> shareImageUrls = new ArrayList<>();
     ArrayList<String> usersEmail = new ArrayList<>();
     ArrayList<String> sharedFolderUserId = new ArrayList<>();
+    ArrayList<String> sharedUsersIdArray = new ArrayList<>();
+    ArrayList<String> DevicePhoneNumbersArray = new ArrayList<>();
+    ArrayList<String> DBPhoneNumbersArray = new ArrayList<>();
     String userId, selectedFolderName;
+    public static final int REQUEST_READ_CONTACTS = 79;
+    String formatPhoneNumber;
+    ArrayList<String> SortedArray = new ArrayList<>();
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -67,7 +82,8 @@ public class UsersListActivity extends AppCompatActivity {
         Firebase.setAndroidContext(this);
 
         selectedFolderName = getIntent().getStringExtra("folderName");
-        sharedFolderUserId = getIntent().getStringArrayListExtra("sharedUsersIdArray");
+        // sharedFolderUserId = getIntent().getStringArrayListExtra("sharedUsersIdArray");
+        // Log.d("tag","sharedID--" +sharedFolderUserId.toString());
 
         final FirebaseUser currentFirebaseUser = FirebaseAuth.getInstance().getCurrentUser();
         userId = currentFirebaseUser.getUid();
@@ -80,6 +96,9 @@ public class UsersListActivity extends AppCompatActivity {
         layoutManagerOfrecyclerView = new LinearLayoutManager(this);
 
         recyclerView.setLayoutManager(layoutManagerOfrecyclerView);
+        final ProgressDialog mProgressDialog = new ProgressDialog(this);
+        mProgressDialog.setMessage("Loading ...");
+        mProgressDialog.show();
 
         //Read profile imageurl and username
         mRef = new Firebase("https://pick-n-roll.firebaseio.com/Users");
@@ -88,20 +107,46 @@ public class UsersListActivity extends AppCompatActivity {
             @Override
             public void onDataChange(com.firebase.client.DataSnapshot dataSnapshot) {
 
-                for (DataSnapshot childDataSnapshot : dataSnapshot.getChildren()) {
-                    usersEmail.add(String.valueOf(childDataSnapshot.child("Email").getValue()));
-                    userName.add(String.valueOf(childDataSnapshot.child("Name").getValue()));
-                    profileImageUrl.add(String.valueOf(childDataSnapshot.child("profileImageUrl").getValue()));
-                    userIdArray.add(childDataSnapshot.getKey());
+                if (dataSnapshot.exists()) {
+                    mProgressDialog.dismiss();
+                    for (DataSnapshot childDataSnapshot : dataSnapshot.getChildren()) {
+                        usersEmail.add(String.valueOf(childDataSnapshot.child("Email").getValue()));
+                        profileImageUrl.add(String.valueOf(childDataSnapshot.child("profileImageUrl").getValue()));
+                        DBPhoneNumbersArray.add(String.valueOf(childDataSnapshot.child("PhoneNumber").getValue()));
 
-                    //Remove logged in username from list
-                    if (String.valueOf(childDataSnapshot.child("Email").getValue()).endsWith(currentFirebaseUser.getEmail())) {
-                        userIdArray.remove(childDataSnapshot.getKey());
-                        userName.remove(String.valueOf(childDataSnapshot.child("Name").getValue()));
+                        //Check contacts access permission
+                        if (ActivityCompat.checkSelfPermission(UsersListActivity.this, android.Manifest.permission.READ_CONTACTS)
+                                == PackageManager.PERMISSION_GRANTED) {
+                            SortedArray = getContacts(DBPhoneNumbersArray);
+
+                            //Delete duplicate entries from Array
+                            Object[] st = SortedArray.toArray();
+                            for (Object s : st) {
+                                if (SortedArray.indexOf(s) != SortedArray.lastIndexOf(s)) {
+                                    SortedArray.remove(SortedArray.lastIndexOf(s));
+                                }
+                            }
+
+                            //Get only names of phonenumber which are there in phone and DB
+                            for (int i = 0; i < SortedArray.size(); i++) {
+                                if ((SortedArray.get(i).contains(String.valueOf(childDataSnapshot.child("PhoneNumber").getValue())))) {
+                                    userName.add(String.valueOf(childDataSnapshot.child("Name").getValue()));
+                                    userIdArray.add(childDataSnapshot.getKey());
+                                }
+                            }
+
+
+                        } else {
+                            requestLocationPermission();
+                        }
+
                     }
+                    JSONArray jsArray = new JSONArray(userName);
+                    ParseJSonResponse(jsArray);
+                } else {
+                    mProgressDialog.show();
                 }
-                JSONArray jsArray = new JSONArray(userName);
-                ParseJSonResponse(jsArray);
+
 
             }
 
@@ -139,13 +184,131 @@ public class UsersListActivity extends AppCompatActivity {
             }
         });
 
+        //Get shareduserdid's
+        DatabaseReference shareduseref = FirebaseDatabase.getInstance().getReference();
+        DatabaseReference sharedRef = shareduseref.child("SharedUsers").child(userId).child(String.valueOf(selectedFolderName));
+        sharedRef.addListenerForSingleValueEvent(
+                new ValueEventListener() {
+                    @Override
+                    public void onDataChange(com.google.firebase.database.DataSnapshot dataSnapshot) {
+
+                        if (dataSnapshot.exists()) {
+                            //data exists, do something
+                            for (com.google.firebase.database.DataSnapshot objSnapshot : dataSnapshot.getChildren()) {
+                                Object obj = objSnapshot.getValue();
+                                sharedFolderUserId.add(String.valueOf(obj));
+
+                            }
+                        }
+                    }
+
+                    @Override
+                    public void onCancelled(DatabaseError databaseError) {
+                        //handle databaseError
+                    }
+                });
+
+    }
+
+
+    protected void requestLocationPermission() {
+        if (ActivityCompat.shouldShowRequestPermissionRationale(this,
+                android.Manifest.permission.READ_CONTACTS)) {
+            // show UI part if you want here to show some rationale !!!
+
+        } else {
+
+            ActivityCompat.requestPermissions(this, new String[]{android.Manifest.permission.READ_CONTACTS},
+                    REQUEST_READ_CONTACTS);
+        }
+
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode,
+                                           String permissions[], int[] grantResults) {
+        switch (requestCode) {
+            case REQUEST_READ_CONTACTS: {
+
+                if (grantResults.length > 0
+                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+
+                    getContacts(DBPhoneNumbersArray);
+
+                } else {
+
+                    // permission denied,Disable the
+                    // functionality that depends on this permission.
+                }
+                return;
+            }
+
+        }
+
+    }
+
+
+    //Read all contacts
+    public ArrayList<String> getContacts(ArrayList<String> DBPhoneNumbersArray) {
+        String phoneNumber = null;
+        String email = null;
+
+        Uri CONTENT_URI = ContactsContract.Contacts.CONTENT_URI;
+        String _ID = ContactsContract.Contacts._ID;
+        String DISPLAY_NAME = ContactsContract.Contacts.DISPLAY_NAME;
+        String HAS_PHONE_NUMBER = ContactsContract.Contacts.HAS_PHONE_NUMBER;
+
+        Uri PhoneCONTENT_URI = ContactsContract.CommonDataKinds.Phone.CONTENT_URI;
+        String Phone_CONTACT_ID = ContactsContract.CommonDataKinds.Phone.CONTACT_ID;
+        String NUMBER = ContactsContract.CommonDataKinds.Phone.NUMBER;
+
+        Uri EmailCONTENT_URI = ContactsContract.CommonDataKinds.Email.CONTENT_URI;
+        String EmailCONTACT_ID = ContactsContract.CommonDataKinds.Email.CONTACT_ID;
+        String DATA = ContactsContract.CommonDataKinds.Email.DATA;
+
+        StringBuffer output = new StringBuffer();
+
+        ContentResolver contentResolver = getContentResolver();
+
+        Cursor cursor = contentResolver.query(CONTENT_URI, null, null, null, null);
+
+        // Loop for every contact in the phone
+        if (cursor.getCount() > 0) {
+
+            while (cursor.moveToNext()) {
+
+                String contact_id = cursor.getString(cursor.getColumnIndex(_ID));
+                String name = cursor.getString(cursor.getColumnIndex(DISPLAY_NAME));
+
+                int hasPhoneNumber = Integer.parseInt(cursor.getString(cursor.getColumnIndex(HAS_PHONE_NUMBER)));
+
+                if (hasPhoneNumber > 0) {
+
+                    // Query and loop for every phone number of the contact
+                    Cursor phoneCursor = contentResolver.query(PhoneCONTENT_URI, null, Phone_CONTACT_ID + " = ?", new String[]{contact_id}, null);
+
+                    while (phoneCursor.moveToNext()) {
+                        phoneNumber = phoneCursor.getString(phoneCursor.getColumnIndex(NUMBER));
+
+
+                    }
+                    phoneCursor.close();
+
+                }
+                formatPhoneNumber = phoneNumber.replaceAll("[^0-9]", "");
+                DevicePhoneNumbersArray.add(formatPhoneNumber);
+            }
+        }
+        return DevicePhoneNumbersArray;
     }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case android.R.id.home:
-                finish();
+                // finish();
+                Intent gotonav = new Intent(UsersListActivity.this, NavActivity.class);
+                startActivity(gotonav);
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
@@ -234,32 +397,39 @@ public class UsersListActivity extends AppCompatActivity {
                         final int pos = getAdapterPosition();
 
                         if (sharedFolderUserId.contains(userIdArray.get(pos))) {
-                            AlertDialog.Builder builder1 = new AlertDialog.Builder(UsersListActivity.this);
-                            builder1.setTitle("Share Album");
-                            builder1.setMessage("Already shared");
-                            builder1.setCancelable(false);
 
-                            builder1.setPositiveButton(
-                                    "Ok",
-                                    new DialogInterface.OnClickListener() {
-                                        public void onClick(DialogInterface dialog, int id) {
-                                            dialog.cancel();
+                            LayoutInflater li = LayoutInflater.from(UsersListActivity.this);
+                            View promptsView = li.inflate(R.layout.userslist_popup, null);
 
-                                        }
-                                    });
+                            AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(
+                                    UsersListActivity.this);
 
-                            builder1.setNegativeButton(
-                                    "Cancel",
-                                    new DialogInterface.OnClickListener() {
-                                        public void onClick(DialogInterface dialog, int id) {
-                                            dialog.cancel();
-                                        }
-                                    });
+                            // set prompts.xml to alertdialog builder
+                            alertDialogBuilder.setView(promptsView);
+
+                            Button btn_ok = (Button) promptsView.findViewById(R.id.ok);
+                            Button btn_cancel = (Button) promptsView.findViewById(R.id.cancel);
 
 
-                            builder1.setIcon(R.drawable.appicon);
+                            final AlertDialog alertDialog = alertDialogBuilder.create();
 
-                            builder1.show();
+                            btn_ok.setOnClickListener(new View.OnClickListener() {
+                                @Override
+                                public void onClick(View view) {
+                                    alertDialog.dismiss();
+                                }
+                            });
+
+                            btn_cancel.setOnClickListener(new View.OnClickListener() {
+                                @Override
+                                public void onClick(View view) {
+                                    alertDialog.dismiss();
+                                }
+                            });
+
+
+                            // show it
+                            alertDialog.show();
 
                         } else {
 
@@ -279,6 +449,12 @@ public class UsersListActivity extends AppCompatActivity {
 
 
         }
+    }
+
+
+    @Override
+    public void onBackPressed() {
+        // do nothing.
     }
 
 

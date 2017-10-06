@@ -1,9 +1,11 @@
 package picnroll.shilpa_cispl.com.picnroll;
 
+import android.content.Intent;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.text.TextUtils;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -14,10 +16,13 @@ import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
 
+import picnroll.shilpa_cispl.com.picnroll.navigationFiles.NavActivity;
+import picnroll.shilpa_cispl.com.picnroll.userlistview.UsersListActivity;
+
 public class ResetPasswordActivity extends AppCompatActivity {
 
     private EditText inputEmail;
-    private Button btnReset, btnBack;
+    private Button btnReset;
     private FirebaseAuth auth;
     private ProgressBar progressBar;
 
@@ -28,17 +33,14 @@ public class ResetPasswordActivity extends AppCompatActivity {
 
         inputEmail = (EditText) findViewById(R.id.email);
         btnReset = (Button) findViewById(R.id.btn_reset_password);
-        btnBack = (Button) findViewById(R.id.btn_back);
+
         progressBar = (ProgressBar) findViewById(R.id.progressBar);
 
+
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         auth = FirebaseAuth.getInstance();
 
-        btnBack.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                finish();
-            }
-        });
+
 
         btnReset.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -67,5 +69,17 @@ public class ResetPasswordActivity extends AppCompatActivity {
                         });
             }
         });
+    }
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case android.R.id.home:
+                // finish();
+                Intent gotonav = new Intent(ResetPasswordActivity.this, LoginActivity.class);
+                startActivity(gotonav);
+                return true;
+            default:
+                return super.onOptionsItemSelected(item);
+        }
     }
 }

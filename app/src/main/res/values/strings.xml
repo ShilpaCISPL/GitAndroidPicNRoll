@@ -11,9 +11,11 @@
     <string name="new_pass">New Password</string>
     <string name="title_activity_profile">Firebase</string>
     <string name="title_activity_login">Sign in</string>
+    <string name="hint_name">Name</string>
     <string name="hint_email">Email</string>
     <string name="hint_password">Password</string>
-    <string name="hint_name">Fullname</string>
+    <string name="hint_phone_number">PhoneNumber</string>
+
     <string name="btn_login">LOGIN</string>
     <string name="btn_link_to_register">Not a member? Get registered in Firebase now!</string>
     <string name="btn_link_to_login">Already registered. Login Me!</string>
@@ -31,4 +33,8 @@
     <string name="drawer_open">Open</string>
     <string name="drawer_close">Close</string>
     <string name="title_activity_view_add_photos">ViewAddPhotosActivity</string>
+    <string name="title_activity_galleries">GalleriesActivity</string>
+
+    <string name="btn_ok">Ok</string>
+    <string name="btn_cancel">Cancel</string>
 </resources>

@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/layout_root"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:orientation="vertical"
+    android:padding="10dp">
+
+
+    <TextView
+        android:id="@+id/titlealert"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:text="Share Album"
+        android:textSize="18dp"
+
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/titlemessage"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/titlealert"
+        android:layout_marginTop="10dp"
+
+        android:gravity="center"
+
+        android:text="Already shared"
+        android:textAppearance="?android:attr/textAppearanceMedium" />
+
+
+    <Button
+        android:id="@+id/ok"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentEnd="true"
+        android:layout_below="@+id/titlealert"
+        android:layout_marginEnd="12dp"
+        android:layout_marginTop="70dp"
+        android:text="@string/btn_ok" />
+
+    <Button
+        android:id="@+id/cancel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBottom="@+id/ok"
+        android:layout_alignStart="@+id/titlemessage"
+        android:layout_marginBottom="12dp"
+        android:layout_marginStart="27dp"
+        android:text="@string/btn_cancel" />
+
+
+</RelativeLayout>
